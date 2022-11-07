@@ -25,6 +25,9 @@ var (
 	// Tree validation errors
 	ErrValSingleChild = errors.New("node with a single descendant")
 	ErrValUnnamedTerm = errors.New("unnamed terminal")
+
+	// Age assignments
+	ErrInvalidRootAge = errors.New("invalid root age")
 )
 
 // A Tree is a time calibrated phylogenetic tree,
@@ -125,6 +128,20 @@ func (t *Tree) Children(id int) []int {
 	return children
 }
 
+// Move sets the age of the root node (in years),
+// and updates all node ages keeping the branch lengths.
+// The age of the root must be at least equal to the distance
+// to the most recent terminal.
+func (t *Tree) Move(age int64) error {
+	if max := t.root.maxLen(); age < max {
+		return fmt.Errorf("%w: age %d is smaller than %d", ErrInvalidRootAge, age, max)
+	}
+
+	t.root.age = age
+	t.root.propagateAge()
+	return nil
+}
+
 // Name returns the name of the tree.
 func (t *Tree) Name() string {
 	return t.name
@@ -211,6 +228,14 @@ func (t *Tree) Validate() error {
 	return nil
 }
 
+func (t *Tree) preOrder(ns []*node, n *node) []*node {
+	ns = append(ns, n)
+	for _, c := range n.children {
+		ns = t.preOrder(ns, c)
+	}
+	return ns
+}
+
 // A Node is a node in a phylogenetic tree.
 type node struct {
 	id     int
@@ -223,10 +248,88 @@ type node struct {
 	children []*node
 }
 
+// FirstTerm return the first terminal
+// by alphabetical order
+// found in a node.
+func (n *node) firstTerm() string {
+	if n.isTerm() {
+		return n.taxon
+	}
+
+	term := n.children[0].firstTerm()
+	for _, c := range n.children[1:] {
+		t := c.firstTerm()
+		if t < term {
+			term = t
+		}
+	}
+	return term
+}
+
 // IsTerm returns true if the node is a terminal
 // (i.e. has no children).
 func (n *node) isTerm() bool {
 	return len(n.children) == 0
+}
+
+// MaxLen returns the maximum length of the sub-tree
+// that descends from the given node
+// (including their ancestral branch).
+func (n *node) maxLen() int64 {
+	var cLen int64
+	for _, c := range n.children {
+		l := c.maxLen()
+		if l > cLen {
+			cLen = l
+		}
+	}
+	return cLen + n.brLen
+}
+
+// PropagateAge updates the age of the descendant nodes.
+func (n *node) propagateAge() {
+	if n.parent != nil {
+		n.age = n.parent.age - n.brLen
+	}
+	for _, c := range n.children {
+		c.propagateAge()
+	}
+}
+
+// Size return the number of terminals on a node.
+func (n *node) size() int {
+	if n.isTerm() {
+		return 1
+	}
+	sz := 0
+	for _, c := range n.children {
+		sz += c.size()
+	}
+	return sz
+}
+
+// SortAllChildren sorts recursively
+// the list of children
+// of a node.
+func (n *node) sortAllChildren() {
+	for _, c := range n.children {
+		c.sortAllChildren()
+	}
+	slices.SortFunc(n.children, func(a, b *node) bool {
+		szA := a.size()
+		szB := b.size()
+		if szA != szB {
+			return szA < szB
+		}
+
+		if a.age != b.age {
+			// larger ages are earlier ages
+			return a.age > b.age
+		}
+
+		// search for terminals in alphabetical order
+		return a.firstTerm() < b.firstTerm()
+	})
 }
 
 // Canon returns a taxon name

@@ -13,9 +13,11 @@ import (
 )
 
 type treeTest struct {
-	name  string
-	nodes []node
+	name string
+	in   string
+	age  int64
 
+	nodes []node
 	terms []string
 	taxa  []string
 }
@@ -91,6 +93,27 @@ func TestTree(t *testing.T) {
 	tt.taxa = []string{"Homo", "Homo neanderthalensis", "Homo sapiens", "Pan"}
 	tt.terms = []string{"Homo neanderthalensis", "Homo sapiens", "Pan"}
 	testTree(t, tree, tt)
+
+	// add nodes
+	// while updating the age of the root as needed.
+	t0 := timetree.New("from 0", 0)
+	for _, n := range nodes {
+		pAge := tree.Age(n.parent)
+		brLen := pAge - n.age
+
+		zAge := t0.Age(n.parent)
+		zLen := zAge - n.age
+
+		if brLen > zLen {
+			age := t0.Age(t0.Root()) + brLen - zLen
+			t0.Move(age)
+			pAge = tree.Age(n.parent)
+			brLen = pAge - n.age
+		}
+		t0.Add(n.parent, brLen, n.taxon)
+	}
+	tt.name = "from 0"
+	testTree(t, t0, tt)
 }
 
 func TestTreeErrors(t *testing.T) {
