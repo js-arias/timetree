@@ -100,17 +100,7 @@ func newick(r *bufio.Reader, name string, age int64) (*Tree, error) {
 	t.root.age = age
 	t.root.propagateAge()
 
-	// sort and relabel nodes
-	t.root.sortAllChildren()
-	ns := make([]*node, 0, len(t.nodes))
-	ns = t.preOrder(ns, t.root)
-
-	nodes := make(map[int]*node, len(ns))
-	for i, n := range ns {
-		n.id = i
-		nodes[i] = n
-	}
-	t.nodes = nodes
+	t.sortNodes()
 
 	return t, nil
 }

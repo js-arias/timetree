@@ -200,6 +200,22 @@ func (t *Tree) Taxon(id int) string {
 	return n.taxon
 }
 
+// TaxNode returns the ID of a node
+// with a given taxon name.
+// It returns false if the taxon does not exists.
+func (t *Tree) TaxNode(name string) (int, bool) {
+	name = canon(name)
+	if name == "" {
+		return -1, false
+	}
+
+	n, ok := t.taxa[name]
+	if !ok {
+		return -1, false
+	}
+	return n.id, true
+}
+
 // Terms returns the name of all terminals of the tree.
 func (t *Tree) Terms() []string {
 	terms := make([]string, 0, len(t.taxa))
@@ -234,6 +250,20 @@ func (t *Tree) preOrder(ns []*node, n *node) []*node {
 		ns = t.preOrder(ns, c)
 	}
 	return ns
+}
+
+// SortNodes sort and relabel nodes.
+func (t *Tree) sortNodes() {
+	t.root.sortAllChildren()
+	ns := make([]*node, 0, len(t.nodes))
+	ns = t.preOrder(ns, t.root)
+
+	nodes := make(map[int]*node, len(ns))
+	for i, n := range ns {
+		n.id = i
+		nodes[i] = n
+	}
+	t.nodes = nodes
 }
 
 // A Node is a node in a phylogenetic tree.

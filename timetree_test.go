@@ -192,6 +192,18 @@ func testTree(t testing.TB, tree *timetree.Tree, test treeTest) {
 		if !reflect.DeepEqual(n, w) {
 			t.Errorf("%s: node %d: got %v, want %v", test.name, id, n, w)
 		}
+
+		if w.taxon == "" {
+			continue
+		}
+		term, ok := tree.TaxNode(w.taxon)
+		if !ok {
+			t.Errorf("%s: taxon %q: not found", test.name, w.taxon)
+			continue
+		}
+		if term != id {
+			t.Errorf("%s: taxon %q: got ID %d, want %d\n", test.name, w.taxon, term, id)
+		}
 	}
 
 	if len(test.taxa) > 0 {
