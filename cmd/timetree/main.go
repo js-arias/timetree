@@ -8,6 +8,7 @@ package main
 import (
 	"github.com/js-arias/command"
 	"github.com/js-arias/timetree/cmd/timetree/importcmd"
+	"github.com/js-arias/timetree/cmd/timetree/list"
 )
 
 var app = &command.Command{
@@ -17,6 +18,7 @@ var app = &command.Command{
 
 func init() {
 	app.Add(importcmd.Command)
+	app.Add(list.Command)
 }
 
 func main() {
