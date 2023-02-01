@@ -193,6 +193,22 @@ func testTree(t testing.TB, tree *timetree.Tree, test treeTest) {
 			t.Errorf("%s: node %d: got %v, want %v", test.name, id, n, w)
 		}
 
+		r := tree.IsRoot(id)
+		if n.parent == -1 && !r {
+			t.Errorf("%s: is root (node %d) false", test.name, id)
+		}
+		if n.parent >= 0 && r {
+			t.Errorf("%s: is root (node %d) true", test.name, id)
+		}
+
+		it := tree.IsTerm(id)
+		if it && len(n.children) > 0 {
+			t.Errorf("%s: is term (node %d) true", test.name, id)
+		}
+		if !it && len(n.children) == 0 {
+			t.Errorf("%s: is term (node %d) false", test.name, id)
+		}
+
 		if w.taxon == "" {
 			continue
 		}

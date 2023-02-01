@@ -128,6 +128,26 @@ func (t *Tree) Children(id int) []int {
 	return children
 }
 
+// IsRoot returns true if the indicated node
+// is the root of the tree.
+func (t *Tree) IsRoot(id int) bool {
+	n, ok := t.nodes[id]
+	if !ok {
+		return false
+	}
+	return n.parent == nil
+}
+
+// IsTerm returns true if the indicated node
+// is a terminal of the tree.
+func (t *Tree) IsTerm(id int) bool {
+	n, ok := t.nodes[id]
+	if !ok {
+		return false
+	}
+	return n.isTerm()
+}
+
 // Move sets the age of the root node (in years),
 // and updates all node ages keeping the branch lengths.
 // The age of the root must be at least equal to the distance
