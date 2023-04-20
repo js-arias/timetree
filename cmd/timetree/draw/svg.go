@@ -185,7 +185,7 @@ func (s svgTree) drawTimeRecs(e *xml.Encoder) {
 				{Name: xml.Name{Local: "x"}, Value: strconv.Itoa(int(minX))},
 				{Name: xml.Name{Local: "width"}, Value: strconv.Itoa(int(maxX - minX))},
 				{Name: xml.Name{Local: "height"}, Value: strconv.Itoa(int(height))},
-				{Name: xml.Name{Local: "style"}, Value: "fill:rgb(100,100,100); stroke-width:0"},
+				{Name: xml.Name{Local: "style"}, Value: "fill:rgb(200,200,200); stroke-width:0"},
 			},
 		}
 		e.EncodeToken(rect)
