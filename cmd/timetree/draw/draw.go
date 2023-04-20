@@ -17,7 +17,7 @@ import (
 )
 
 var Command = &command.Command{
-	Usage: `draw [--step <value>] [--tree <tree>]
+	Usage: `draw [--step <value>] [--tree <tree>] [--time <number>]
 	[-o|--output <out-file>] [<tree-file>...]`,
 	Short: "draw a tree into an SVG file",
 	Long: `
@@ -30,6 +30,9 @@ given, the trees will be read from the standard input.
 By default all trees will be drawn. If the flag --tree is set, only the
 indicated tree will be printed.
 
+If --time flag is defined, then a grey box of the indicted size will be
+printed as background. The size of the box is in million years.
+
 The output file will be the name of each tree. If the flag --output, or -o, is
 defined, the indicated name will be used as the prefix for the output files.
 
@@ -41,11 +44,13 @@ to define a different value (it can have decimal points).
 }
 
 var stepX float64
+var timeBox float64
 var treeName string
 var output string
 
 func setFlags(c *command.Command) {
 	c.Flags().Float64Var(&stepX, "step", 10, "")
+	c.Flags().Float64Var(&timeBox, "time", 0, "")
 	c.Flags().StringVar(&output, "output", "", "")
 	c.Flags().StringVar(&output, "o", "", "")
 	c.Flags().StringVar(&treeName, "tree", "", "")
