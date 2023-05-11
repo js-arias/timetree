@@ -7,6 +7,7 @@ package timetree_test
 import (
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/js-arias/timetree"
@@ -233,6 +234,68 @@ func testTree(t testing.TB, tree *timetree.Tree, test treeTest) {
 		terms := tree.Terms()
 		if !reflect.DeepEqual(terms, test.terms) {
 			t.Errorf("%s: got %v terminals, want %v", test.name, terms, test.terms)
+		}
+	}
+}
+
+var dinoTree = `# some dinosaurs
+tree	node	parent	age	taxon
+dinos	0	-1	235000000	
+dinos	1	0	230000000	Eoraptor lunensis
+dinos	2	0	230000000	
+dinos	3	2	170000000	
+dinos	4	3	145000000	Ceratosaurus nasicornis
+dinos	5	3	71000000	Carnotaurus sastrei
+dinos	6	2	170000000	
+dinos	7	6	68000000	Tyrannosaurus rex
+dinos	8	6	160000000	
+dinos	9	8	150000000	Archaeopteryx lithographica
+dinos	10	8	0	Passer domesticus
+`
+
+func TestMRCA(t *testing.T) {
+	tests := map[string]struct {
+		terms []string
+		mrca  int
+	}{
+		"two": {
+			terms: []string{"Passer domesticus", "Ceratosaurus nasicornis"},
+			mrca:  2,
+		},
+		"three": {
+			terms: []string{"Passer domesticus", "Archaeopteryx lithographica", "Ceratosaurus nasicornis"},
+			mrca:  2,
+		},
+		"root": {
+			terms: []string{"Passer domesticus", "Eoraptor lunensis", "Ceratosaurus nasicornis"},
+			mrca:  0,
+		},
+		"not in tree": {
+			terms: []string{"Passer domesticus", "Homo sapiens"},
+			mrca:  -1,
+		},
+		"empty": {
+			mrca: -1,
+		},
+		"single": {
+			terms: []string{"Passer domesticus"},
+			mrca:  10,
+		},
+	}
+	c, err := timetree.ReadTSV(strings.NewReader(dinoTree))
+	if err != nil {
+		t.Fatalf("mrca: unexpected error: %v", err)
+	}
+
+	d := c.Tree("dinos")
+	if d == nil {
+		t.Fatalf("mrca: tree %q not found", "dinos")
+	}
+
+	for n, test := range tests {
+		mrca := d.MRCA(test.terms...)
+		if mrca != test.mrca {
+			t.Errorf("mrca %q: got %d, want %d", n, mrca, test.mrca)
 		}
 	}
 }

@@ -148,6 +148,52 @@ func (t *Tree) IsTerm(id int) bool {
 	return n.isTerm()
 }
 
+// MRCA returns the most recent common ancestor
+// of two or more terminals.
+func (t *Tree) MRCA(names ...string) int {
+	if len(names) == 0 {
+		return -1
+	}
+
+	n, ok := t.taxa[names[0]]
+	if !ok {
+		return -1
+	}
+	if len(names) == 1 {
+		return n.id
+	}
+	var mrca []int
+	for n != nil {
+		mrca = append([]int{n.id}, mrca...)
+		n = n.parent
+	}
+
+	for _, nm := range names[1:] {
+		n, ok := t.taxa[nm]
+		if !ok {
+			return -1
+		}
+		var m []int
+		for n != nil {
+			m = append([]int{n.id}, m...)
+			n = n.parent
+		}
+
+		for i, v := range mrca {
+			if i >= len(m) {
+				mrca = mrca[:i]
+				break
+			}
+			if v != m[i] {
+				mrca = mrca[:i]
+				break
+			}
+		}
+	}
+
+	return mrca[len(mrca)-1]
+}
+
 // Move sets the age of the root node (in years),
 // and updates all node ages keeping the branch lengths.
 // The age of the root must be at least equal to the distance
