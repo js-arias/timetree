@@ -41,13 +41,13 @@ var headerFields = []string{
 //
 // Here is an example file:
 //
-//	     # time calibrated phylogenetic tree
-//	     tree	node	parent	age	taxon
-//		dinosaurs	0	-1	235000000
-//		dinosaurs	1	0	230000000	Eoraptor lunensis
-//		dinosaurs	2	0	170000000
-//		dinosaurs	3	2	145000000	Ceratosaurus nasicornis
-//		dinosaurs	4	2	71000000	Carnotaurus sastrei
+//	# time calibrated phylogenetic tree
+//	tree	node	parent	age	taxon
+//	dinosaurs	0	-1	235000000
+//	dinosaurs	1	0	230000000	Eoraptor lunensis
+//	dinosaurs	2	0	170000000
+//	dinosaurs	3	2	145000000	Ceratosaurus nasicornis
+//	dinosaurs	4	2	71000000	Carnotaurus sastrei
 func ReadTSV(r io.Reader) (*Collection, error) {
 	tab := csv.NewReader(r)
 	tab.Comma = '\t'
