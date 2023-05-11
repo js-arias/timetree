@@ -28,6 +28,8 @@ var (
 
 	// Age assignments
 	ErrInvalidRootAge = errors.New("invalid root age")
+	ErrOlderAge       = errors.New("age to old for node")
+	ErrYoungerAge     = errors.New("age to young for node")
 )
 
 // A Tree is a time calibrated phylogenetic tree,
@@ -243,6 +245,32 @@ func (t *Tree) Parent(id int) int {
 // which is 0.
 func (t *Tree) Root() int {
 	return t.root.id
+}
+
+// Set sets the age of a node
+// (in years).
+func (t *Tree) Set(id int, age int64) error {
+	n, ok := t.nodes[id]
+	if !ok {
+		return nil
+	}
+
+	if p := n.parent; p != nil && p.age < age {
+		return ErrOlderAge
+	}
+
+	var max int64
+	for _, c := range n.children {
+		if c.age > max {
+			max = c.age
+		}
+	}
+	if max > age {
+		return ErrYoungerAge
+	}
+
+	n.age = age
+	return nil
 }
 
 // Taxa returns all defined taxon names of the tree.

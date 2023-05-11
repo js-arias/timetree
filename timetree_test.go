@@ -299,3 +299,62 @@ func TestMRCA(t *testing.T) {
 		}
 	}
 }
+
+func TestSet(t *testing.T) {
+	c, err := timetree.ReadTSV(strings.NewReader(dinoTree))
+	if err != nil {
+		t.Fatalf("mrca: unexpected error: %v", err)
+	}
+
+	d := c.Tree("dinos")
+	if d == nil {
+		t.Fatalf("mrca: tree %q not found", "dinos")
+	}
+
+	if err := d.Set(8, 166_873_534); err != nil {
+		t.Errorf("set: unexpected error: %v", err)
+	}
+	if d.Age(8) != 166_873_534 {
+		t.Errorf("set: got %d, want %d", d.Age(8), 166_873_534)
+	}
+}
+
+func TestSetError(t *testing.T) {
+	tests := map[string]struct {
+		n   int
+		age int64
+		err error
+	}{
+		"older age": {
+			n:   8,
+			age: 171_000_000,
+			err: timetree.ErrOlderAge,
+		},
+		"younger age": {
+			n:   8,
+			age: 149_999_000,
+			err: timetree.ErrYoungerAge,
+		},
+		"younger root": {
+			n:   0,
+			age: 229_000_000,
+			err: timetree.ErrYoungerAge,
+		},
+	}
+
+	c, err := timetree.ReadTSV(strings.NewReader(dinoTree))
+	if err != nil {
+		t.Fatalf("mrca: unexpected error: %v", err)
+	}
+
+	d := c.Tree("dinos")
+	if d == nil {
+		t.Fatalf("mrca: tree %q not found", "dinos")
+	}
+
+	for name, test := range tests {
+		if err := d.Set(test.n, test.age); !errors.Is(err, test.err) {
+			t.Errorf("set error %q: got error %q, want %q", name, err, test.err)
+		}
+	}
+}
