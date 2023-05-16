@@ -11,6 +11,7 @@ import (
 	"github.com/js-arias/timetree/cmd/timetree/importcmd"
 	"github.com/js-arias/timetree/cmd/timetree/list"
 	"github.com/js-arias/timetree/cmd/timetree/newick"
+	"github.com/js-arias/timetree/cmd/timetree/set"
 	"github.com/js-arias/timetree/cmd/timetree/terms"
 )
 
@@ -24,6 +25,7 @@ func init() {
 	app.Add(importcmd.Command)
 	app.Add(list.Command)
 	app.Add(newick.Command)
+	app.Add(set.Command)
 	app.Add(terms.Command)
 }
 
