@@ -100,7 +100,7 @@ func newick(r *bufio.Reader, name string, age int64) (*Tree, error) {
 	t.root.age = age
 	t.root.propagateAge()
 
-	t.sortNodes()
+	t.Format()
 
 	return t, nil
 }

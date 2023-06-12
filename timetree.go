@@ -197,6 +197,21 @@ func (t *Tree) Children(id int) []int {
 	return children
 }
 
+// Format sort the nodes of a tree,
+// changing node IDs if necessary.
+func (t *Tree) Format() {
+	t.root.sortAllChildren()
+	ns := make([]*node, 0, len(t.nodes))
+	ns = t.preOrder(ns, t.root)
+
+	nodes := make(map[int]*node, len(ns))
+	for i, n := range ns {
+		n.id = i
+		nodes[i] = n
+	}
+	t.nodes = nodes
+}
+
 // IsRoot returns true if the indicated node
 // is the root of the tree.
 func (t *Tree) IsRoot(id int) bool {
@@ -411,20 +426,6 @@ func (t *Tree) preOrder(ns []*node, n *node) []*node {
 		ns = t.preOrder(ns, c)
 	}
 	return ns
-}
-
-// SortNodes sort and relabel nodes.
-func (t *Tree) sortNodes() {
-	t.root.sortAllChildren()
-	ns := make([]*node, 0, len(t.nodes))
-	ns = t.preOrder(ns, t.root)
-
-	nodes := make(map[int]*node, len(ns))
-	for i, n := range ns {
-		n.id = i
-		nodes[i] = n
-	}
-	t.nodes = nodes
 }
 
 // A Node is a node in a phylogenetic tree.

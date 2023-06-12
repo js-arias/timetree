@@ -158,7 +158,7 @@ func ReadTSV(r io.Reader) (*Collection, error) {
 	}
 
 	for _, t := range c.trees {
-		t.sortNodes()
+		t.Format()
 		if err := t.Validate(); err != nil {
 			return nil, fmt.Errorf("tree %s: %w", t.name, err)
 		}
