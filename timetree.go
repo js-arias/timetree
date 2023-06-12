@@ -21,6 +21,8 @@ var (
 	ErrAddNoParent     = errors.New("parent ID not in tree")
 	ErrAddRepeated     = errors.New("repeated taxon name")
 	ErrAddInvalidBrLen = errors.New("invalid branch length")
+	ErrAddNoSister     = errors.New("sister ID not in tree")
+	ErrAddRootSister   = errors.New("sister ID is the root node")
 
 	// Tree validation errors
 	ErrValSingleChild = errors.New("node with a single descendant")
@@ -85,6 +87,71 @@ func (t *Tree) Add(id int, brLen int64, name string) (int, error) {
 		return -1, fmt.Errorf("%w: branch length %d greater than parent age %d", ErrAddInvalidBrLen, brLen, p.age)
 	}
 
+	n := &node{
+		id:     len(t.nodes),
+		parent: p,
+		age:    age,
+		taxon:  name,
+		brLen:  brLen,
+	}
+	p.children = append(p.children, n)
+	t.nodes[n.id] = n
+	if name != "" {
+		t.taxa[name] = n
+	}
+
+	return n.id, nil
+}
+
+// AddSister adds a node as a sister group
+// of the indicated node ID,
+// using the indicated age of the added node
+// and the branch length of the new branch,
+// both in years,
+// and the name of the added node
+// (that can be empty).
+// It returns the ID of the added node
+// or -1 and an error.
+func (t *Tree) AddSister(id int, age, brLen int64, name string) (int, error) {
+	sister, ok := t.nodes[id]
+	if !ok {
+		return -1, fmt.Errorf("%w: ID %d", ErrAddNoSister, id)
+	}
+	if t.root == sister {
+		return -1, fmt.Errorf("%w: ID %d", ErrAddRootSister, id)
+	}
+	name = canon(name)
+	if name != "" {
+		if _, dup := t.taxa[name]; dup {
+			return -1, fmt.Errorf("%w: %s", ErrAddRepeated, name)
+		}
+	}
+
+	// Add new parent
+	pp := sister.parent
+	pAge := age + brLen
+	if pp.age <= pAge {
+		return -1, fmt.Errorf("%w: parent age %d, want %d", ErrOlderAge, pAge, pp.age)
+	}
+	p := &node{
+		id:     len(t.nodes),
+		parent: pp,
+		age:    pAge,
+		brLen:  pp.age - age,
+	}
+	t.nodes[p.id] = p
+	// replace old sister with the new parent
+	for i, d := range pp.children {
+		if d == sister {
+			pp.children[i] = p
+			break
+		}
+	}
+	// add the sister as the first children of the new parent
+	p.children = append(p.children, sister)
+	sister.parent = p
+
+	// now add the taxon
 	n := &node{
 		id:     len(t.nodes),
 		parent: p,

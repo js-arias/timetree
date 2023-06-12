@@ -358,3 +358,55 @@ func TestSetError(t *testing.T) {
 		}
 	}
 }
+
+func TestAddSister(t *testing.T) {
+	c, err := timetree.ReadTSV(strings.NewReader(dinoTree))
+	if err != nil {
+		t.Fatalf("AddSister: unexpected error: %v", err)
+	}
+
+	d := c.Tree("dinos")
+	if d == nil {
+		t.Fatalf("AddSister: tree %q not found", "dinos")
+	}
+
+	ppAge := d.Age(d.Parent(7))
+
+	id, err := d.AddSister(7, 71_000_000, 5_400_000, "Albertosaurus sarcophagus")
+	if err != nil {
+		t.Fatalf("AddSister: unexpected error: %v", err)
+	}
+
+	// check the added taxon
+	if d.Taxon(id) != "Albertosaurus sarcophagus" {
+		t.Errorf("AddSister: got taxon %q, want %q", d.Taxon(id), "Albertosaurus sarcophagus")
+	}
+	if d.Age(id) != 71_000_000 {
+		t.Errorf("AddSister: got age %d, want %d", d.Age(id), 71_000_000)
+	}
+
+	// check parent
+	p := id - 1
+	if d.Parent(id) != p {
+		t.Errorf("AddSister: got parent ID %d, want %d", d.Parent(id), p)
+	}
+	if d.Parent(7) != p {
+		t.Errorf("AddSister: got parent ID %d for sister %d, want %d", d.Parent(7), 7, p)
+	}
+	if d.Age(p) != 76_400_000 {
+		t.Errorf("AddSister: got parent age %d, want %d", d.Age(p), 76_400_000)
+	}
+	pDesc := []int{7, id}
+	if !reflect.DeepEqual(d.Children(p), pDesc) {
+		t.Errorf("AddSister: got parent children %v, want %v", d.Children(p), pDesc)
+	}
+
+	// check grand parent
+	if d.Age(d.Parent(p)) != ppAge {
+		t.Errorf("AddSister: got grand parent age %d, want %d", d.Age(d.Parent(p)), ppAge)
+	}
+	ppDesc := []int{8, 11}
+	if !reflect.DeepEqual(d.Children(d.Parent(p)), ppDesc) {
+		t.Errorf("AddSister: got parent children %v, want %v", d.Children(d.Parent(p)), ppDesc)
+	}
+}
