@@ -410,3 +410,71 @@ func TestAddSister(t *testing.T) {
 		t.Errorf("AddSister: got parent children %v, want %v", d.Children(d.Parent(p)), ppDesc)
 	}
 }
+
+func TestAddSisterError(t *testing.T) {
+	tests := map[string]struct {
+		sister int
+		age    int64
+		brLen  int64
+		name   string
+		err    error
+	}{
+		"non sister": {
+			sister: 500,
+			age:    71_000_000,
+			brLen:  5_400_000,
+			name:   "Albertosaurus sarcophagus",
+			err:    timetree.ErrAddNoSister,
+		},
+		"at root": {
+			sister: 0,
+			age:    71_000_000,
+			brLen:  5_400_000,
+			name:   "Albertosaurus sarcophagus",
+			err:    timetree.ErrAddRootSister,
+		},
+		"repeated name": {
+			sister: 6,
+			age:    71_000_000,
+			brLen:  5_400_000,
+			name:   "Tyrannosaurus rex",
+			err:    timetree.ErrAddRepeated,
+		},
+		"to old": {
+			sister: 7,
+			age:    71_000_000,
+			brLen:  300_000_000,
+			name:   "Albertosaurus sarcophagus",
+			err:    timetree.ErrOlderAge,
+		},
+		"to young": {
+			sister: 7,
+			age:    7_000_000,
+			brLen:  3_000_000,
+			name:   "Albertosaurus sarcophagus",
+			err:    timetree.ErrYoungerAge,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			c, err := timetree.ReadTSV(strings.NewReader(dinoTree))
+			if err != nil {
+				t.Fatalf("AddSister: unexpected error: %v", err)
+			}
+
+			d := c.Tree("dinos")
+			if d == nil {
+				t.Fatalf("AddSister: tree %q not found", "dinos")
+			}
+
+			id, err := d.AddSister(test.sister, test.age, test.brLen, test.name)
+			if id != -1 {
+				t.Errorf("%s: got %d, want %d [no ID]", name, id, -1)
+			}
+			if !errors.Is(err, test.err) {
+				t.Errorf("%s: got error %q, want %q", name, err, test.err)
+			}
+		})
+	}
+}

@@ -127,9 +127,13 @@ func (t *Tree) AddSister(id int, age, brLen int64, name string) (int, error) {
 		}
 	}
 
+	pAge := age + brLen
+	if pAge < sister.age {
+		return -1, fmt.Errorf("%w: sister age %d, want %d", ErrYoungerAge, pAge, sister.age)
+	}
+
 	// Add new parent
 	pp := sister.parent
-	pAge := age + brLen
 	if pp.age <= pAge {
 		return -1, fmt.Errorf("%w: parent age %d, want %d", ErrOlderAge, pAge, pp.age)
 	}
