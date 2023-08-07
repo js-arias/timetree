@@ -18,9 +18,10 @@ type treeTest struct {
 	in   string
 	age  int64
 
-	nodes []node
-	terms []string
-	taxa  []string
+	nodes  []node
+	terms  []string
+	taxa   []string
+	totLen int64
 }
 
 type node struct {
@@ -53,6 +54,7 @@ func TestTree(t *testing.T) {
 				children: []int{1, 2},
 			},
 		},
+		totLen: 13_050_000,
 	}
 
 	nodes := []node{
@@ -235,6 +237,10 @@ func testTree(t testing.TB, tree *timetree.Tree, test treeTest) {
 		if !reflect.DeepEqual(terms, test.terms) {
 			t.Errorf("%s: got %v terminals, want %v", test.name, terms, test.terms)
 		}
+	}
+
+	if tree.Len() != test.totLen {
+		t.Errorf("%s: total length: got %d, want %d", test.name, tree.Len(), test.totLen)
 	}
 }
 

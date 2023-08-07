@@ -236,6 +236,13 @@ func (t *Tree) IsTerm(id int) bool {
 	return n.isTerm()
 }
 
+// Len returns the total length
+// (in years)
+// of a tree.
+func (t *Tree) Len() int64 {
+	return t.root.totalLen()
+}
+
 // MRCA returns the most recent common ancestor
 // of two or more terminals.
 func (t *Tree) MRCA(names ...string) int {
@@ -526,6 +533,20 @@ func (n *node) sortAllChildren() {
 		// search for terminals in alphabetical order
 		return a.firstTerm() < b.firstTerm()
 	})
+}
+
+// TotalLen returns the length of all the branches descendant
+// from a node.
+func (n *node) totalLen() int64 {
+	var l int64
+	for _, c := range n.children {
+		l += c.totalLen()
+	}
+
+	if n.parent != nil {
+		l += n.parent.age - n.age
+	}
+	return l
 }
 
 // Canon returns a taxon name

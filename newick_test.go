@@ -39,6 +39,7 @@ func TestNewick(t *testing.T) {
 				"Macaca mulatta",
 				"Macropus fuliginosus",
 			},
+			totLen: 849_000_000,
 		},
 		"non ultrametric": {
 			name: "non ultrametric",
@@ -72,6 +73,7 @@ func TestNewick(t *testing.T) {
 				"Passer domesticus",
 				"Tyrannosaurus rex",
 			},
+			totLen: 536_000_000,
 		},
 		"no present taxon": {
 			name: "no present taxon",
@@ -102,6 +104,7 @@ func TestNewick(t *testing.T) {
 				"Eoraptor lunensis",
 				"Tyrannosaurus rex",
 			},
+			totLen: 376_000_000,
 		},
 		"zero length branch": {
 			name: "zero length branch",
@@ -113,8 +116,9 @@ func TestNewick(t *testing.T) {
 				{id: 3, parent: 2, age: 7_999_999, taxon: "B"},
 				{id: 4, parent: 2, age: 7_999_999, taxon: "C"},
 			},
-			terms: []string{"A", "B", "C"},
-			taxa:  []string{"A", "B", "C"},
+			terms:  []string{"A", "B", "C"},
+			taxa:   []string{"A", "B", "C"},
+			totLen: 14_000_001,
 		},
 		"mesquite tree": {
 			name: "mesquite tree",
@@ -126,8 +130,9 @@ func TestNewick(t *testing.T) {
 				{id: 3, parent: 2, taxon: "A"},
 				{id: 4, parent: 2, taxon: "B"},
 			},
-			terms: []string{"A", "B", "C"},
-			taxa:  []string{"A", "B", "C"},
+			terms:  []string{"A", "B", "C"},
+			taxa:   []string{"A", "B", "C"},
+			totLen: 7_800_000,
 		},
 	}
 
@@ -187,6 +192,7 @@ func TestCollection(t *testing.T) {
 				"Macaca mulatta",
 				"Macropus fuliginosus",
 			},
+			totLen: 849_000_000,
 		},
 		{
 			name: "multiple.1",
@@ -220,6 +226,7 @@ func TestCollection(t *testing.T) {
 				"Passer domesticus",
 				"Tyrannosaurus rex",
 			},
+			totLen: 536_000_000,
 		},
 	}
 
