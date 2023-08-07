@@ -30,6 +30,8 @@ type node struct {
 	age      int64
 	taxon    string
 	children []int
+	toRoot   int64
+	depth    int
 }
 
 func getNode(t *timetree.Tree, id int) node {
@@ -39,6 +41,8 @@ func getNode(t *timetree.Tree, id int) node {
 		age:      t.Age(id),
 		taxon:    t.Taxon(id),
 		children: t.Children(id),
+		toRoot:   t.LenToRoot(id),
+		depth:    t.Depth(id),
 	}
 }
 
@@ -62,6 +66,8 @@ func TestTree(t *testing.T) {
 			id:     1,
 			parent: 0,
 			taxon:  "Pan",
+			toRoot: 6_300_000,
+			depth:  1,
 		},
 		{
 			id:       2,
@@ -69,17 +75,23 @@ func TestTree(t *testing.T) {
 			age:      500_000,
 			taxon:    "Homo",
 			children: []int{3, 4},
+			toRoot:   5_800_000,
+			depth:    1,
 		},
 		{
 			id:     3,
 			parent: 2,
 			taxon:  "Homo sapiens",
+			toRoot: 6_300_000,
+			depth:  2,
 		},
 		{
 			id:     4,
 			parent: 2,
 			age:    50_000,
 			taxon:  "Homo neanderthalensis",
+			toRoot: 6_250_000,
+			depth:  2,
 		},
 	}
 	// Add nodes

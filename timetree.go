@@ -201,6 +201,22 @@ func (t *Tree) Children(id int) []int {
 	return children
 }
 
+// Depth returns the number of nodes between the indicated node
+// and the root of the tree.
+func (t *Tree) Depth(id int) int {
+	n, ok := t.nodes[id]
+	if !ok {
+		return -1
+	}
+
+	var d int
+	for n != t.root {
+		d++
+		n = n.parent
+	}
+	return d
+}
+
 // Format sort the nodes of a tree,
 // changing node IDs if necessary.
 func (t *Tree) Format() {
@@ -241,6 +257,18 @@ func (t *Tree) IsTerm(id int) bool {
 // of a tree.
 func (t *Tree) Len() int64 {
 	return t.root.totalLen()
+}
+
+// LenToRoot returns the length
+// (in years)
+// from a node to the root of the tree.
+func (t *Tree) LenToRoot(id int) int64 {
+	n, ok := t.nodes[id]
+	if !ok {
+		return 0
+	}
+
+	return t.root.age - n.age
 }
 
 // MRCA returns the most recent common ancestor
