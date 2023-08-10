@@ -7,9 +7,8 @@ package timetree
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
-
-	"golang.org/x/exp/slices"
 )
 
 // Tree collection errors

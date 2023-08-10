@@ -10,10 +10,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 
 	"github.com/js-arias/command"
 	"github.com/js-arias/timetree"
-	"golang.org/x/exp/slices"
 )
 
 var Command = &command.Command{

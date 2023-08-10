@@ -9,11 +9,10 @@ package timetree
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
-
-	"golang.org/x/exp/slices"
 )
 
 var (
@@ -546,20 +545,29 @@ func (n *node) sortAllChildren() {
 	for _, c := range n.children {
 		c.sortAllChildren()
 	}
-	slices.SortFunc(n.children, func(a, b *node) bool {
+	slices.SortFunc(n.children, func(a, b *node) int {
 		szA := a.size()
 		szB := b.size()
 		if szA != szB {
-			return szA < szB
+			if szA < szB {
+				return -1
+			}
+			return 1
 		}
 
 		if a.age != b.age {
 			// larger ages are earlier ages
-			return a.age > b.age
+			if a.age > b.age {
+				return -1
+			}
+			return 1
 		}
 
 		// search for terminals in alphabetical order
-		return a.firstTerm() < b.firstTerm()
+		if a.firstTerm() < b.firstTerm() {
+			return -1
+		}
+		return 1
 	})
 }
 
