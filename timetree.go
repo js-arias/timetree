@@ -393,6 +393,40 @@ func (t *Tree) Set(id int, age int64) error {
 	return nil
 }
 
+// SetName sets the name of a node,
+// removing any previous name of the node.
+// If the node is not a terminal,
+// the new name must be non-empty.
+func (t *Tree) SetName(id int, name string) error {
+	n, ok := t.nodes[id]
+	if !ok {
+		return nil
+	}
+
+	name = canon(name)
+	if name == "" {
+		if n.isTerm() {
+			return ErrValUnnamedTerm
+		}
+		if n.taxon == "" {
+			return nil
+		}
+		delete(t.taxa, n.taxon)
+		return nil
+	}
+
+	if _, dup := t.taxa[name]; dup {
+		return fmt.Errorf("%w: %s", ErrAddRepeated, name)
+	}
+
+	if n.taxon != "" {
+		delete(t.taxa, n.taxon)
+	}
+	n.taxon = name
+	t.taxa[name] = n
+	return nil
+}
+
 // Taxa returns all defined taxon names of the tree.
 func (t *Tree) Taxa() []string {
 	taxa := make([]string, 0, len(t.taxa))

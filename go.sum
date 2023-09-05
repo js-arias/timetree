@@ -1,2 +1,4 @@
 github.com/js-arias/command v0.0.0-20220321160405-bad66700a180 h1:pE1RCqlGkRZTdwAUK833XGbz5FvTHBaS/OW0GQXz5pM=
 github.com/js-arias/command v0.0.0-20220321160405-bad66700a180/go.mod h1:ogKwQI2+xKu3CeddpPBks1UacMtHx40lkPcsP26Zyn0=
+github.com/js-arias/gbifer v0.0.0-20230905173919-aa63af247b21 h1:oPK+h7ZexqBzX13WmFvFkZ3vVSTcZF+1mkZFi37lLn4=
+github.com/js-arias/gbifer v0.0.0-20230905173919-aa63af247b21/go.mod h1:1uRmlNzs2lmtaskbc+anqN9bL8XkHhIOm2t7Qmf4uyw=
