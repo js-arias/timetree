@@ -134,6 +134,20 @@ func TestNewick(t *testing.T) {
 			taxa:   []string{"A", "B", "C"},
 			totLen: 7_800_000,
 		},
+		"beast tree with comments": {
+			name: "beast tree with comments",
+			in:   "((A[&1_x=2.5,2_x=2.1,4_rng{2.3,2.1}]:1.0,B[&1_x=2.5,2_x=2.1,4_rng{2.3,2.1}]:1.0)[&1_x=2.5,2_x=2.1,4_rng{2.3,2.1}]:2.4,C[&1_x=2.5,2_x=2.1,4_rng{2.3,2.1}]:3.4)[&1_x=2.5,2_x=2.1,4_rng{2.3,2.1}];",
+			nodes: []node{
+				{id: 0, parent: -1, age: 3_400_000, children: []int{1, 2}},
+				{id: 1, parent: 0, taxon: "C", toRoot: 3_400_000, depth: 1},
+				{id: 2, parent: 0, age: 1_000_000, children: []int{3, 4}, toRoot: 2_400_000, depth: 1},
+				{id: 3, parent: 2, taxon: "A", toRoot: 3_400_000, depth: 2},
+				{id: 4, parent: 2, taxon: "B", toRoot: 3_400_000, depth: 2},
+			},
+			terms:  []string{"A", "B", "C"},
+			taxa:   []string{"A", "B", "C"},
+			totLen: 7_800_000,
+		},
 	}
 
 	for name, test := range tests {

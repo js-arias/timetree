@@ -210,6 +210,12 @@ func readBrLen(r *bufio.Reader) (float64, error) {
 		if err != nil {
 			return 0, err
 		}
+		if r1 == '[' {
+			if _, err := readBlock(r, ']'); err != nil {
+				return 0, err
+			}
+			continue
+		}
 
 		if r1 == ':' {
 			break
@@ -278,6 +284,12 @@ func readName(r *bufio.Reader) (string, error) {
 		if r1 == '_' {
 			b.WriteRune(' ')
 			continue
+		}
+		if r1 == '[' {
+			if _, err := readBlock(r, ']'); err != nil {
+				return "", err
+			}
+			break
 		}
 		b.WriteRune(r1)
 	}
