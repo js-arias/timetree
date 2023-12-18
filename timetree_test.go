@@ -496,3 +496,72 @@ func TestAddSisterError(t *testing.T) {
 		})
 	}
 }
+
+func TestDelete(t *testing.T) {
+	c, err := timetree.ReadTSV(strings.NewReader(dinoTree))
+	if err != nil {
+		t.Fatalf("Delete: unexpected error: %v", err)
+	}
+
+	d := c.Tree("dinos")
+	if d == nil {
+		t.Fatalf("Delete: tree %q not found", "dinos")
+	}
+
+	d.AddSister(7, 71_000_000, 10_000_000, "Albertosaurus sarcophagus")
+	d.AddSister(12, 76_000_000, 2_500_000, "Gorgosaurus libratus")
+	d.AddSister(5, 70_000_000, 15_000_000, "Majungasaurus crenatissimus")
+	d.Format()
+
+	term, ok := d.TaxNode("Majungasaurus crenatissimus")
+	if !ok {
+		t.Fatalf("Delete: taxon %q not found", "Majungasaurus crenatissimus")
+	}
+	if err := d.Delete(term); err != nil {
+		t.Fatalf("Delete: unexpected error when deleting %d: %v", term, err)
+	}
+
+	n := d.MRCA("Albertosaurus sarcophagus", "Gorgosaurus libratus")
+	if err := d.Delete(n); err != nil {
+		t.Fatalf("Delete: unexpected error when deleting %d: %v", n, err)
+	}
+
+	d.Format()
+
+	w := treeTest{
+		name: "dinos",
+		age:  0,
+		nodes: []node{
+			{id: 0, parent: -1, age: 235_000_000, children: []int{1, 2}},
+			{id: 1, parent: 0, age: 230_000_000, taxon: "Eoraptor lunensis", toRoot: 5_000_000, depth: 1},
+			{id: 2, parent: 0, age: 230_000_000, children: []int{3, 6}, toRoot: 5_000_000, depth: 1},
+			{id: 3, parent: 2, age: 170_000_000, children: []int{4, 5}, toRoot: 65_000_000, depth: 2},
+			{id: 4, parent: 3, age: 145_000_000, taxon: "Ceratosaurus nasicornis", toRoot: 90_000_000, depth: 3},
+			{id: 5, parent: 3, age: 71_000_000, taxon: "Carnotaurus sastrei", toRoot: 164_000_000, depth: 3},
+			{id: 6, parent: 2, age: 170_000_000, children: []int{7, 8}, toRoot: 65_000_000, depth: 2},
+			{id: 7, parent: 6, age: 68_000_000, taxon: "Tyrannosaurus rex", toRoot: 167_000_000, depth: 3},
+			{id: 8, parent: 6, age: 160_000_000, children: []int{9, 10}, toRoot: 75_000_000, depth: 3},
+			{id: 9, parent: 8, age: 150_000_000, taxon: "Archaeopteryx lithographica", toRoot: 85_000_000, depth: 4},
+			{id: 10, parent: 8, age: 0, taxon: "Passer domesticus", toRoot: 235_000_000, depth: 4},
+		},
+		terms: []string{
+			"Archaeopteryx lithographica",
+			"Carnotaurus sastrei",
+			"Ceratosaurus nasicornis",
+			"Eoraptor lunensis",
+			"Passer domesticus",
+			"Tyrannosaurus rex",
+		},
+		taxa: []string{
+			"Archaeopteryx lithographica",
+			"Carnotaurus sastrei",
+			"Ceratosaurus nasicornis",
+			"Eoraptor lunensis",
+			"Passer domesticus",
+			"Tyrannosaurus rex",
+		},
+		totLen: 536_000_000,
+	}
+
+	testTree(t, d, w)
+}

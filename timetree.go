@@ -200,6 +200,54 @@ func (t *Tree) Children(id int) []int {
 	return children
 }
 
+// Delete removes a node
+// and all of its descendants
+// from a tree.
+func (t *Tree) Delete(id int) error {
+	n, ok := t.nodes[id]
+	if !ok {
+		return nil
+	}
+
+	p := n.parent
+
+	// polytomous node
+	if len(p.children) > 2 {
+		// remove the node
+		for i, c := range p.children {
+			p.children[i] = nil
+			if c == n {
+				p.children = append(p.children[:i], p.children[i+1:]...)
+			}
+		}
+		n.parent = nil
+		n.del(t)
+		return nil
+	}
+
+	// dichotomous node
+	anc := p.parent
+
+	// remove parent node
+	for i, c := range anc.children {
+		if c != p {
+			continue
+		}
+		for j, s := range p.children {
+			if s == n {
+				continue
+			}
+			anc.children[i] = s
+			p.children[j] = nil
+			s.parent = anc
+		}
+	}
+
+	p.parent = nil
+	p.del(t)
+	return nil
+}
+
 // Depth returns the number of nodes between the indicated node
 // and the root of the tree.
 func (t *Tree) Depth(id int) int {
@@ -510,6 +558,21 @@ type node struct {
 	brLen int64
 
 	children []*node
+}
+
+// Delete a node and all of its descendants.
+func (n *node) del(t *Tree) {
+	delete(t.nodes, n.id)
+	if n.taxon != "" {
+		delete(t.taxa, n.taxon)
+	}
+
+	for _, c := range n.children {
+		if c == nil {
+			continue
+		}
+		c.del(t)
+	}
 }
 
 // FirstTerm return the first terminal
