@@ -565,3 +565,48 @@ func TestDelete(t *testing.T) {
 
 	testTree(t, d, w)
 }
+
+func TestSubTree(t *testing.T) {
+	c, err := timetree.ReadTSV(strings.NewReader(dinoTree))
+	if err != nil {
+		t.Fatalf("Delete: unexpected error: %v", err)
+	}
+
+	d := c.Tree("dinos")
+	if d == nil {
+		t.Fatalf("Delete: tree %q not found", "dinos")
+	}
+
+	mrca := d.MRCA("Tyrannosaurus rex", "Passer domesticus")
+	nt := d.SubTree(mrca, "TETANUROS")
+
+	w := treeTest{
+		name: "tetanuros",
+		age:  0,
+		nodes: []node{
+			{id: 0, parent: -1, age: 170_000_000, children: []int{1, 2}},
+			{id: 1, parent: 0, age: 68_000_000, taxon: "Tyrannosaurus rex", toRoot: 102_000_000, depth: 1},
+			{id: 2, parent: 0, age: 160_000_000, children: []int{3, 4}, toRoot: 10_000_000, depth: 1},
+			{id: 3, parent: 2, age: 150_000_000, taxon: "Archaeopteryx lithographica", toRoot: 20_000_000, depth: 2},
+			{id: 4, parent: 2, age: 0, taxon: "Passer domesticus", toRoot: 170_000_000, depth: 2},
+		},
+		terms: []string{
+			"Archaeopteryx lithographica",
+			"Passer domesticus",
+			"Tyrannosaurus rex",
+		},
+		taxa: []string{
+			"Archaeopteryx lithographica",
+			"Passer domesticus",
+			"Tyrannosaurus rex",
+		},
+		totLen: 282_000_000,
+	}
+
+	testTree(t, nt, w)
+
+	// Test default tree name
+	nt = d.SubTree(mrca, "")
+	w.name = "dinos:node-6"
+	testTree(t, nt, w)
+}

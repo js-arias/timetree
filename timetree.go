@@ -475,6 +475,39 @@ func (t *Tree) SetName(id int, name string) error {
 	return nil
 }
 
+// SubTree creates a new tree from a given node
+// using the indicated name.
+// If no name is given,
+// it will use the node name,
+// or a node identifier.
+func (t *Tree) SubTree(id int, name string) *Tree {
+	n, ok := t.nodes[id]
+	if !ok {
+		return nil
+	}
+
+	name = strings.Join(strings.Fields(name), " ")
+	if name == "" {
+		name = n.taxon
+	}
+	if name == "" {
+		name = fmt.Sprintf("%s:node-%d", t.name, id)
+	}
+	name = strings.ToLower(name)
+
+	sub := &Tree{
+		name:  name,
+		nodes: make(map[int]*node),
+		taxa:  make(map[string]*node),
+	}
+	root := sub.copySource(nil, n)
+	sub.root = root
+
+	sub.Format()
+
+	return sub
+}
+
 // Taxa returns all defined taxon names of the tree.
 func (t *Tree) Taxa() []string {
 	taxa := make([]string, 0, len(t.taxa))
@@ -546,6 +579,30 @@ func (t *Tree) preOrder(ns []*node, n *node) []*node {
 		ns = t.preOrder(ns, c)
 	}
 	return ns
+}
+
+// CopyNode copies a node
+// and all of its descendants.
+func (t *Tree) copySource(p *node, src *node) *node {
+	n := &node{
+		id:     len(t.nodes),
+		parent: p,
+		age:    src.age,
+		taxon:  src.taxon,
+	}
+	t.nodes[n.id] = n
+	for _, c := range src.children {
+		d := t.copySource(n, c)
+		n.children = append(n.children, d)
+	}
+	if p != nil {
+		n.brLen = p.age - n.age
+	}
+	if n.taxon != "" {
+		t.taxa[n.taxon] = n
+	}
+
+	return n
 }
 
 // A Node is a node in a phylogenetic tree.
