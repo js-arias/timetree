@@ -86,6 +86,7 @@ func run(c *command.Command, args []string) (err error) {
 				err = e
 			}
 		}()
+		w = f
 	} else {
 		output = "stdout"
 	}
