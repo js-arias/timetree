@@ -19,7 +19,8 @@ import (
 var Command = &command.Command{
 	Usage: `sim [-o|--output <file>] [--name <tree-name>]
 	[--trees <tree-number]
-	--terms <term-number> [--min <age>] --max <age>`,
+	[--coalescent <number>]
+	--terms <term-number> [--min <age>] [--max <age>]`,
 	Short: "simulate trees",
 	Long: `
 Command sim creates one on more random trees.
@@ -39,6 +40,11 @@ should have.
 The flags --min and --max define the minimum and maximum ages of the root
 node in million years. The flag --max is required. The flag --min can be
 omitted; its default value is 0.000001 (i.e. a year before present).
+
+By default, it creates uniform trees. Use the flag --coalescent with the "size
+of the population" to create a coalescent tree. A rule of thumb using as size
+the same value of the maximum age.
+
 	`,
 	SetFlags: setFlags,
 	Run:      run,
@@ -50,12 +56,14 @@ var numTrees int
 var numTerms int
 var minAge float64
 var maxAge float64
+var coalescent float64
 
 func setFlags(c *command.Command) {
 	c.Flags().IntVar(&numTrees, "trees", 1, "")
 	c.Flags().IntVar(&numTerms, "terms", 0, "")
 	c.Flags().Float64Var(&maxAge, "max", 0, "")
 	c.Flags().Float64Var(&minAge, "min", 0, "")
+	c.Flags().Float64Var(&coalescent, "coalescent", 0, "")
 	c.Flags().StringVar(&output, "output", "", "")
 	c.Flags().StringVar(&output, "o", "", "")
 	c.Flags().StringVar(&nameFlag, "name", "random-tree", "")
@@ -86,7 +94,13 @@ func run(c *command.Command, args []string) (err error) {
 		rootAge := rand.Int64N(max-min) + min
 		name := fmt.Sprintf("%s-%d", nameFlag, i)
 
-		t := simulate.Uniform(name, rootAge, ages)
+		var t *timetree.Tree
+		if coalescent > 0 {
+			t = simulate.Coalescent(name, coalescent*millionYears, max, numTerms)
+		} else {
+			t = simulate.Uniform(name, rootAge, ages)
+		}
+		t.Format()
 		coll.Add(t)
 	}
 
