@@ -155,3 +155,71 @@ func Coalescent(name string, n float64, max int64, terms int) *timetree.Tree {
 
 	return t
 }
+
+// Yule creates a Yule tree with the given speciation rate,
+// in million years,
+// stopping when the number of terminals is reached
+// or when all proposed speciation events are in the future.
+// It returns false if less than two terminals are included.
+// Yule panics if terms < 2.
+func Yule(name string, spRate float64, rootAge int64, terms int) (*timetree.Tree, bool) {
+	if terms < 2 {
+		panic("expecting more than two terminals")
+	}
+
+	exp := distuv.Exponential{
+		Rate: spRate,
+	}
+
+	t := timetree.New(name, rootAge)
+	added := 0
+	yuleNode(t, 0, terms-2, &added, exp)
+
+	if len(t.Terms()) < 2 {
+		return t, false
+	}
+
+	return t, true
+}
+
+func yuleNode(t *timetree.Tree, n, max int, added *int, exp distuv.Exponential) {
+	age := t.Age(n)
+	if t.NumInternal() >= max {
+		term := fmt.Sprintf("term%d", *added)
+		t.Add(n, age, term)
+		*added++
+		term = fmt.Sprintf("term%d", *added)
+		t.Add(n, age, term)
+		*added++
+		return
+	}
+
+	// left descendant
+	next := age - int64(exp.Rand()*1_000_000)
+	if next < 0 {
+		term := fmt.Sprintf("term%d", *added)
+		t.Add(n, age, term)
+		*added++
+	} else {
+		left, _ := t.Add(n, age-next, "")
+		yuleNode(t, left, max, added, exp)
+	}
+
+	// right descendant
+	if t.NumInternal() >= max {
+		term := fmt.Sprintf("term%d", *added)
+		t.Add(n, age, term)
+		*added++
+		return
+	}
+
+	next = age - int64(exp.Rand()*1_000_000)
+	if next < 0 {
+		term := fmt.Sprintf("term%d", *added)
+		t.Add(n, age, term)
+		*added++
+		return
+	}
+	left, _ := t.Add(n, age-next, "")
+	yuleNode(t, left, max, added, exp)
+}

@@ -8,6 +8,7 @@ package sim
 
 import (
 	"fmt"
+	"math/rand/v2"
 	"os"
 
 	"github.com/js-arias/command"
@@ -19,6 +20,7 @@ var Command = &command.Command{
 	Usage: `sim [-o|--output <file>] [--name <tree-name>]
 	[--trees <tree-number]
 	[--coalescent <number>]
+	[--yule <rate>]
 	--terms <term-number> [--min <age>] --max <age>`,
 	Short: "simulate trees",
 	Long: `
@@ -42,7 +44,8 @@ omitted; its default value is 0.000001 (i.e. a year before present).
 
 By default, it creates uniform trees. Use the flag --coalescent with the "size
 of the population" to create a coalescent tree. A rule of thumb using as size
-the same value of the maximum age.
+the same value of the maximum age. Use the flag --yule with the speciation rate
+per million years to create a Yule tree.
 
 	`,
 	SetFlags: setFlags,
@@ -56,6 +59,7 @@ var numTerms int
 var minAge float64
 var maxAge float64
 var coalescent float64
+var yule float64
 
 func setFlags(c *command.Command) {
 	c.Flags().IntVar(&numTrees, "trees", 1, "")
@@ -63,6 +67,7 @@ func setFlags(c *command.Command) {
 	c.Flags().Float64Var(&maxAge, "max", 0, "")
 	c.Flags().Float64Var(&minAge, "min", 0, "")
 	c.Flags().Float64Var(&coalescent, "coalescent", 0, "")
+	c.Flags().Float64Var(&yule, "yule", 0, "")
 	c.Flags().StringVar(&output, "output", "", "")
 	c.Flags().StringVar(&output, "o", "", "")
 	c.Flags().StringVar(&nameFlag, "name", "random-tree", "")
@@ -93,9 +98,22 @@ func run(c *command.Command, args []string) (err error) {
 		name := fmt.Sprintf("%s-%d", nameFlag, i)
 
 		var t *timetree.Tree
-		if coalescent > 0 {
+		switch {
+		case yule > 0:
+			root := max
+			if min < max {
+				root = rand.Int64N(max-min) + min
+			}
+			for {
+				var ok bool
+				t, ok = simulate.Yule(name, yule, root, numTerms)
+				if ok {
+					break
+				}
+			}
+		case coalescent > 0:
 			t = simulate.Coalescent(name, coalescent*millionYears, max, numTerms)
-		} else {
+		default:
 			t = simulate.Uniform(name, max, min, ages)
 		}
 		t.Format()
