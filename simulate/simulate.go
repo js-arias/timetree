@@ -29,15 +29,19 @@ type Rander interface {
 // Syst. Biol. 61: 973-999.
 // doi:10.1093/sysbio/sys058.
 // Uniform panics if len(ages) < 2,
-func Uniform(name string, rootAge int64, ages []int64) *timetree.Tree {
-	if len(ages) < 1 {
+func Uniform(name string, max, min int64, ages []int64) *timetree.Tree {
+	if len(ages) < 2 {
 		panic("expecting more than two terminals")
 	}
 
-	for _, a := range ages {
-		if a > rootAge {
-			rootAge = a + 2
+	for _, a := range ages[1:] {
+		if a > min {
+			min = a
 		}
+	}
+	rootAge := max
+	if max > min {
+		rootAge = rand.Int64N(max-min) + min
 	}
 
 	// shuffle terminals
@@ -150,5 +154,4 @@ func Coalescent(name string, n float64, max int64, terms int) *timetree.Tree {
 	}
 
 	return t
-
 }

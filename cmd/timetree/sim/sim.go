@@ -8,7 +8,6 @@ package sim
 
 import (
 	"fmt"
-	"math/rand/v2"
 	"os"
 
 	"github.com/js-arias/command"
@@ -20,7 +19,7 @@ var Command = &command.Command{
 	Usage: `sim [-o|--output <file>] [--name <tree-name>]
 	[--trees <tree-number]
 	[--coalescent <number>]
-	--terms <term-number> [--min <age>] [--max <age>]`,
+	--terms <term-number> [--min <age>] --max <age>`,
 	Short: "simulate trees",
 	Long: `
 Command sim creates one on more random trees.
@@ -91,14 +90,13 @@ func run(c *command.Command, args []string) (err error) {
 
 	coll := timetree.NewCollection()
 	for i := 0; i < numTrees; i++ {
-		rootAge := rand.Int64N(max-min) + min
 		name := fmt.Sprintf("%s-%d", nameFlag, i)
 
 		var t *timetree.Tree
 		if coalescent > 0 {
 			t = simulate.Coalescent(name, coalescent*millionYears, max, numTerms)
 		} else {
-			t = simulate.Uniform(name, rootAge, ages)
+			t = simulate.Uniform(name, max, min, ages)
 		}
 		t.Format()
 		coll.Add(t)
