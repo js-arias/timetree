@@ -254,6 +254,11 @@ func testTree(t testing.TB, tree *timetree.Tree, test treeTest) {
 	if tree.Len() != test.totLen {
 		t.Errorf("%s: total length: got %d, want %d", test.name, tree.Len(), test.totLen)
 	}
+
+	internal := len(tree.Terms()) - 1
+	if tree.NumInternal() != internal {
+		t.Errorf("%s: internal nodes: got %d, want %d", test.name, tree.NumInternal(), internal)
+	}
 }
 
 var dinoTree = `# some dinosaurs

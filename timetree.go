@@ -364,6 +364,19 @@ func (t *Tree) MRCA(names ...string) int {
 	return mrca[len(mrca)-1]
 }
 
+// NumInternal returns the number of internal nodes
+// (i.e., nodes with descendants).
+func (t *Tree) NumInternal() int {
+	num := 0
+	for _, n := range t.nodes {
+		if len(n.children) == 0 {
+			continue
+		}
+		num++
+	}
+	return num
+}
+
 // Move sets the age of the root node (in years),
 // and updates all node ages keeping the branch lengths.
 // The age of the root must be at least equal to the distance
