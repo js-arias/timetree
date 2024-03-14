@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/js-arias/command"
 	"github.com/js-arias/timetree"
@@ -21,6 +23,7 @@ var Command = &command.Command{
 	[--trees <tree-number]
 	[--coalescent <number>]
 	[--yule <rate>]
+	[--bd <rate,rate>]
 	--terms <term-number> [--min <age>] --max <age>`,
 	Short: "simulate trees",
 	Long: `
@@ -45,7 +48,10 @@ omitted; its default value is 0.000001 (i.e. a year before present).
 By default, it creates uniform trees. Use the flag --coalescent with the "size
 of the population" to create a coalescent tree. A rule of thumb using as size
 the same value of the maximum age. Use the flag --yule with the speciation rate
-per million years to create a Yule tree.
+per million years to create a Yule tree. Use the flag --bd with an speciation
+and extinction rate per million years to create a birth-death tree, the format
+for the rates are "<value>,<value>" for example "0.1,0.01" will indicate a
+speciation rate of 0.1 and an extinction rate of 0.01.
 
 	`,
 	SetFlags: setFlags,
@@ -54,6 +60,7 @@ per million years to create a Yule tree.
 
 var output string
 var nameFlag string
+var birthDeath string
 var numTrees int
 var numTerms int
 var minAge float64
@@ -68,6 +75,7 @@ func setFlags(c *command.Command) {
 	c.Flags().Float64Var(&minAge, "min", 0, "")
 	c.Flags().Float64Var(&coalescent, "coalescent", 0, "")
 	c.Flags().Float64Var(&yule, "yule", 0, "")
+	c.Flags().StringVar(&birthDeath, "bd", "", "")
 	c.Flags().StringVar(&output, "output", "", "")
 	c.Flags().StringVar(&output, "o", "", "")
 	c.Flags().StringVar(&nameFlag, "name", "random-tree", "")
@@ -91,6 +99,18 @@ func run(c *command.Command, args []string) (err error) {
 		min = 1
 	}
 
+	var spRate, extRate float64
+	if birthDeath != "" {
+		var err error
+		spRate, extRate, err = parseRates()
+		if err != nil {
+			return err
+		}
+		if extRate == 0 && yule == 0 {
+			yule = spRate
+		}
+	}
+
 	ages := make([]int64, numTerms)
 
 	coll := timetree.NewCollection()
@@ -99,6 +119,18 @@ func run(c *command.Command, args []string) (err error) {
 
 		var t *timetree.Tree
 		switch {
+		case extRate > 0:
+			root := max
+			if min < max {
+				root = rand.Int64N(max-min) + min
+			}
+			for {
+				var ok bool
+				t, ok = simulate.BirthDeath(name, spRate, extRate, root, numTerms)
+				if ok {
+					break
+				}
+			}
 		case yule > 0:
 			root := max
 			if min < max {
@@ -143,4 +175,29 @@ func run(c *command.Command, args []string) (err error) {
 	}
 
 	return nil
+}
+
+func parseRates() (sp, e float64, err error) {
+	sv := strings.Split(birthDeath, ",")
+	if len(sv) != 2 {
+		return 0, 0, fmt.Errorf("flag --bd: expecting '<value>,<value>'")
+	}
+
+	sp, err = strconv.ParseFloat(sv[0], 64)
+	if err != nil {
+		return 0, 0, fmt.Errorf("flag --bd: %v", err)
+	}
+	if sp < 0 {
+		return 0, 0, fmt.Errorf("flag --bd: invalid speciation rate %.6f", sp)
+	}
+
+	e, err = strconv.ParseFloat(sv[1], 64)
+	if err != nil {
+		return 0, 0, fmt.Errorf("flag --bd: %v", err)
+	}
+	if e < 0 {
+		return 0, 0, fmt.Errorf("flag --bd: invalid extinction rate %.6f", e)
+	}
+
+	return sp, e, nil
 }

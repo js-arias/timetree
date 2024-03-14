@@ -223,3 +223,106 @@ func yuleNode(t *timetree.Tree, n, max int, added *int, exp distuv.Exponential) 
 	left, _ := t.Add(n, age-next, "")
 	yuleNode(t, left, max, added, exp)
 }
+
+// BirthDeath create a birth-death tree
+// with the given speciation and extinction rate,
+// in million years,
+// stopping when the number of terminals is reached
+// of when all proposed events are in the future.
+// It returns false if less than two terminals are included.
+// BirthDeath panics if terms < 2.
+func BirthDeath(name string, spRate, extRate float64, rootAge int64, terms int) (*timetree.Tree, bool) {
+	if terms < 2 {
+		panic("expecting more than two terminals")
+	}
+
+	if extRate == 0 {
+		return Yule(name, spRate, rootAge, terms)
+	}
+
+	sp := distuv.Exponential{
+		Rate: spRate,
+	}
+	e := distuv.Exponential{
+		Rate: extRate,
+	}
+
+	t := timetree.New(name, rootAge)
+	added := 0
+	bdNode(t, 0, terms-2, &added, sp, e)
+
+	if len(t.Terms()) < 2 {
+		return t, false
+	}
+
+	return t, true
+}
+
+func bdNode(t *timetree.Tree, n, max int, added *int, sp, ext distuv.Exponential) {
+	age := t.Age(n)
+	if t.NumInternal() >= max {
+		// left descendant
+		brLen := age
+		if e := age - int64(ext.Rand()*1_000_000); e > 0 {
+			brLen = age - e
+		}
+		term := fmt.Sprintf("term%d", *added)
+		t.Add(n, brLen, term)
+		*added++
+
+		// right descendant
+		brLen = age
+		if e := age - int64(ext.Rand()*1_000_000); e > 0 {
+			brLen = age - e
+		}
+		term = fmt.Sprintf("term%d", *added)
+		t.Add(n, brLen, term)
+		*added++
+		return
+	}
+
+	// left descendant
+	spNext := age - int64(sp.Rand()*1_000_000)
+	eNext := age - int64(ext.Rand()*1_000_000)
+	if spNext < 0 && eNext < 0 {
+		term := fmt.Sprintf("term%d", *added)
+		t.Add(n, age, term)
+		*added++
+	} else if eNext > spNext {
+		term := fmt.Sprintf("term%d", *added)
+		t.Add(n, age-eNext, term)
+		*added++
+	} else {
+		left, _ := t.Add(n, age-spNext, "")
+		bdNode(t, left, max, added, sp, ext)
+	}
+
+	// right descendant
+	eNext = age - int64(ext.Rand()*1_000_000)
+	if t.NumInternal() >= max {
+		brLen := age
+		if eNext > 0 {
+			brLen = age - eNext
+		}
+		term := fmt.Sprintf("term%d", *added)
+		t.Add(n, brLen, term)
+		*added++
+		return
+	}
+
+	spNext = age - int64(sp.Rand()*1_000_000)
+	if spNext < 0 && eNext < 0 {
+		term := fmt.Sprintf("term%d", *added)
+		t.Add(n, age, term)
+		*added++
+		return
+	}
+	if eNext > spNext {
+		term := fmt.Sprintf("term%d", *added)
+		t.Add(n, age-eNext, term)
+		*added++
+		return
+	}
+	right, _ := t.Add(n, age-spNext, "")
+	bdNode(t, right, max, added, sp, ext)
+}
