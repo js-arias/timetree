@@ -502,8 +502,33 @@ func TestAddSisterError(t *testing.T) {
 	}
 }
 
+var dinoTreeToDel = `# some dinosaurs
+tree	node	parent	age	taxon
+dinos	0	-1	235000000	
+dinos	1	0	230000000	Eoraptor lunensis
+dinos	2	0	230000000	
+dinos	3	2	170000000	
+dinos	4	3	145000000	Ceratosaurus nasicornis
+dinos	5	3	85000000	
+dinos	15	5	71000000	Carnotaurus sastrei
+dinos	16	5	70000000	Majungasaurus crenatissimus
+dinos	6	2	170000000	
+dinos	7	6	81000000	
+dinos	11	7	68000000	Tyrannosaurus rex
+dinos	12	7	78500000	
+dinos	13	12	71000000	Albertosaurus sarcophagus
+dinos	14	12	76000000	Gorgosaurus libratus
+dinos	8	6	160000000	
+dinos	9	8	150000000	Archaeopteryx lithographica
+dinos	10	8	72000000	
+dinos	17	10	0	Passer domesticus
+dinos	18	10	0	Falco peregrinus
+dinos	19	10	0	Struthio camelus
+dinos	20	10	0	Turdus migratorius
+`
+
 func TestDelete(t *testing.T) {
-	c, err := timetree.ReadTSV(strings.NewReader(dinoTree))
+	c, err := timetree.ReadTSV(strings.NewReader(dinoTreeToDel))
 	if err != nil {
 		t.Fatalf("Delete: unexpected error: %v", err)
 	}
@@ -513,17 +538,22 @@ func TestDelete(t *testing.T) {
 		t.Fatalf("Delete: tree %q not found", "dinos")
 	}
 
-	d.AddSister(7, 71_000_000, 10_000_000, "Albertosaurus sarcophagus")
-	d.AddSister(12, 76_000_000, 2_500_000, "Gorgosaurus libratus")
-	d.AddSister(5, 70_000_000, 15_000_000, "Majungasaurus crenatissimus")
 	d.Format()
 
-	term, ok := d.TaxNode("Majungasaurus crenatissimus")
-	if !ok {
-		t.Fatalf("Delete: taxon %q not found", "Majungasaurus crenatissimus")
+	termsToDel := []string{
+		"Majungasaurus crenatissimus",
+		"Turdus migratorius",
+		"Struthio camelus",
+		"Falco peregrinus",
 	}
-	if err := d.Delete(term); err != nil {
-		t.Fatalf("Delete: unexpected error when deleting %d: %v", term, err)
+	for _, tn := range termsToDel {
+		term, ok := d.TaxNode(tn)
+		if !ok {
+			t.Fatalf("Delete: taxon %q not found", tn)
+		}
+		if err := d.Delete(term); err != nil {
+			t.Fatalf("Delete: unexpected error when deleting %d: %v", term, err)
+		}
 	}
 
 	n := d.MRCA("Albertosaurus sarcophagus", "Gorgosaurus libratus")

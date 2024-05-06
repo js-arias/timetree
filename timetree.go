@@ -215,9 +215,10 @@ func (t *Tree) Delete(id int) error {
 	if len(p.children) > 2 {
 		// remove the node
 		for i, c := range p.children {
-			p.children[i] = nil
 			if c == n {
+				p.children[i] = nil
 				p.children = append(p.children[:i], p.children[i+1:]...)
+				break
 			}
 		}
 		n.parent = nil
