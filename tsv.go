@@ -114,9 +114,7 @@ func ReadTSV(r io.Reader) (*Collection, error) {
 			var ok bool
 			p, ok = t.nodes[pID]
 			if !ok {
-				if err != nil {
-					return nil, fmt.Errorf("on row %d: field %q: %w: %d", ln, f, ErrAddNoParent, pID)
-				}
+				return nil, fmt.Errorf("on row %d: field %q: %w: %d", ln, f, ErrAddNoParent, pID)
 			}
 		} else if t.root != nil {
 			return nil, fmt.Errorf("on row %d: field %q: root already defined", ln, f)
