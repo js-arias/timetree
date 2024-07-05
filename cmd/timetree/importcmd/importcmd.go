@@ -11,14 +11,17 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/js-arias/command"
 	"github.com/js-arias/timetree"
 )
 
 var Command = &command.Command{
-	Usage: `import [--age <value>] [-o|--output <file>]
-	--name <tree-name> [<newick-file>...]`,
+	Usage: `import [--format <format>] [--age <value>]
+	[--name <tree-name>]
+	[-o|--output <file>]
+	[<newick-file>...]`,
 	Short: "import a newick tree",
 	Long: `
 Command import reads one or more files that contain phylogenetic trees in
@@ -28,7 +31,14 @@ file in TSV format.
 One or more newick files can be given as arguments. If no file is given the
 input will be read from the standard input.
 
-Trees in TSV format must have names. The flag --name is required and sets the
+By default, the input file is assumed to be a raw newick file (i.e., a tree
+file only with the newick trees). With the flag --format, a different format
+can be defined. Valid formats are:
+	- newick, a traditional newick tree.
+	- nexus, a nexus file with a trees block.
+
+Trees in TSV format must have names. Nexus files already have named trees; if
+the file is in the newick format, the flag --name is required and sets the
 name of the tree. If multiple trees are found, the name will be append with
 sequential numbers.
 
@@ -57,17 +67,26 @@ or equal to the maximum branch length.
 var output string
 var age float64
 var nameFlag string
+var format string
 
 func setFlags(c *command.Command) {
 	c.Flags().StringVar(&output, "output", "", "")
 	c.Flags().StringVar(&output, "o", "", "")
 	c.Flags().StringVar(&nameFlag, "name", "", "")
+	c.Flags().StringVar(&format, "format", "newick", "")
 	c.Flags().Float64Var(&age, "age", 0, "")
 }
 
 func run(c *command.Command, args []string) error {
-	if nameFlag == "" {
-		return c.UsageError("flag --name undefined")
+	format = strings.ToLower(format)
+	switch format {
+	case "newick":
+		if nameFlag == "" {
+			return c.UsageError("flag --name undefined")
+		}
+	case "nexus":
+	default:
+		return c.UsageError(fmt.Sprintf("unknown format %q", format))
 	}
 
 	coll, err := newTreeCollection()
@@ -84,7 +103,7 @@ func run(c *command.Command, args []string) error {
 			nm = fmt.Sprintf("%s.%d", nameFlag, i)
 		}
 
-		nc, err := readNewick(c.Stdin(), a, nm)
+		nc, err := readTrees(c.Stdin(), a, nm)
 		if err != nil {
 			return err
 		}
@@ -129,7 +148,7 @@ func newTreeCollection() (*timetree.Collection, error) {
 // into an integer in years.
 const millionYears = 1_000_000
 
-func readNewick(r io.Reader, treeFile, name string) (*timetree.Collection, error) {
+func readTrees(r io.Reader, treeFile, name string) (*timetree.Collection, error) {
 	if treeFile != "-" {
 		f, err := os.Open(treeFile)
 		if err != nil {
@@ -141,7 +160,14 @@ func readNewick(r io.Reader, treeFile, name string) (*timetree.Collection, error
 		treeFile = "stdin"
 	}
 
-	c, err := timetree.Newick(r, name, int64(age*millionYears))
+	if format == "newick" {
+		c, err := timetree.Newick(r, name, int64(age*millionYears))
+		if err != nil {
+			return nil, fmt.Errorf("while reading file %q: %v", treeFile, err)
+		}
+		return c, nil
+	}
+	c, err := timetree.Nexus(r, int64(age*millionYears))
 	if err != nil {
 		return nil, fmt.Errorf("while reading file %q: %v", treeFile, err)
 	}
