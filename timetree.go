@@ -229,6 +229,20 @@ func (t *Tree) Delete(id int) error {
 	// dichotomous node
 	anc := p.parent
 
+	// the node is the most basal group.
+	if anc == nil {
+		for i, c := range p.children {
+			if c != n {
+				t.root = c
+				c.parent = nil
+				p.children[i] = nil
+				break
+			}
+		}
+		p.del(t)
+		return nil
+	}
+
 	// remove parent node
 	for i, c := range anc.children {
 		if c != p {

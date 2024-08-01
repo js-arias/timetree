@@ -504,9 +504,11 @@ func TestAddSisterError(t *testing.T) {
 
 var dinoTreeToDel = `# some dinosaurs
 tree	node	parent	age	taxon
-dinos	0	-1	235000000	
-dinos	1	0	230000000	Eoraptor lunensis
-dinos	2	0	230000000	
+dinos	0	-1	236000000	
+dinos	101	0	229000000	Pisanosaurus mertii
+dinos	102	0	235000000	
+dinos	100	102	230000000	Eoraptor lunensis
+dinos	2	102	230000000	
 dinos	3	2	170000000	
 dinos	4	3	145000000	Ceratosaurus nasicornis
 dinos	5	3	85000000	
@@ -545,6 +547,7 @@ func TestDelete(t *testing.T) {
 		"Turdus migratorius",
 		"Struthio camelus",
 		"Falco peregrinus",
+		"Pisanosaurus mertii",
 	}
 	for _, tn := range termsToDel {
 		term, ok := d.TaxNode(tn)
