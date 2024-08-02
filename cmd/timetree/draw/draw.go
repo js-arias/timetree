@@ -20,6 +20,7 @@ import (
 
 var Command = &command.Command{
 	Usage: `draw [--tree <tree>]
+	[--scale <value>]
 	[--step <value>] [--time <number>] [--tick <tick-value>]
 	[-o|--output <out-file>] [<tree-file>...]`,
 	Short: "draw a tree into an SVG file",
@@ -30,22 +31,25 @@ file.
 One or more tree files in TSV format can be given as arguments. If no file is
 given, the trees will be read from the standard input.
 
+By default, the time scale is set in million years. To change the scale, use
+the flag --scale with the value in years of the scale.
+
 By default all trees will be drawn. If the flag --tree is set, only the
 indicated tree will be printed.
 
 If --time flag is defined, then a grey box of the indicted size will be
-printed as background. The size of the box is in million years.
+printed as background. The size of the box is in time scale units.
 
-By default, a timescale with ticks every million years will be added at the
+By default, a timescale with ticks every time scale unit will be added at the
 bottom of the drawing. Use the flag --tick to define the tick lines, using the
 following format: "<min-tick>,<max-tick>,<label-tick>", in which min-tick
 indicates minor ticks, max-tick indicates major ticks, and label-tick the
 ticks that will be labeled; for example, the default is "1,5,5" which means
-that small ticks will be added each million years, major ticks will be added
-every 5 million years, and labels will be added every 5 million years.
+that small ticks will be added time scale unit, major ticks will be added
+every 5 time scale units, and labels will be added every 5 time scale units.
 
-By default, 10 pixels units will be used per million year, use the flag --step
-to define a different value (it can have decimal points).
+By default, 10 pixels units will be used per time scale unit, use the flag
+--step to define a different value (it can have decimal points).
 
 The output file will be the name of each tree. If the flag --output, or -o, is
 defined, the indicated name will be used as the prefix for the output files.
@@ -56,6 +60,7 @@ defined, the indicated name will be used as the prefix for the output files.
 
 var stepX float64
 var timeBox float64
+var scale float64
 var treeName string
 var tickFlag string
 var output string
@@ -63,11 +68,17 @@ var output string
 func setFlags(c *command.Command) {
 	c.Flags().Float64Var(&stepX, "step", 10, "")
 	c.Flags().Float64Var(&timeBox, "time", 0, "")
+	c.Flags().Float64Var(&scale, "scale", millionYears, "")
 	c.Flags().StringVar(&output, "output", "", "")
 	c.Flags().StringVar(&output, "o", "", "")
 	c.Flags().StringVar(&treeName, "tree", "", "")
 	c.Flags().StringVar(&tickFlag, "tick", "", "")
 }
+
+// millionYears is used to transform ages
+// (an integer in years)
+// to a float in million years.
+const millionYears = 1_000_000
 
 func run(c *command.Command, args []string) error {
 	tv, err := parseTick()
