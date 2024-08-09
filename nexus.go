@@ -126,6 +126,14 @@ func readTreeNewick(r *bufio.Reader, token *strings.Builder, age int64) (*Tree, 
 	if _, err := readToken(r, token); err != nil {
 		return nil, fmt.Errorf("while reading tree name: %v", err)
 	}
+	if token.String() == "*" {
+		// read tree name
+		// as some nexus files put an star
+		// before the tree name
+		if _, err := readToken(r, token); err != nil {
+			return nil, fmt.Errorf("while reading tree name: %v", err)
+		}
+	}
 	name := strings.ToLower(token.String())
 	if err := skipSpaces(r); err != nil {
 		return nil, fmt.Errorf("expecting newick tree: %v", err)
