@@ -34,13 +34,14 @@ Begin trees;
 		5 Archaeopteryx_lithographica,
 		6 Passer_domesticus
 		;
-	tree tree1 = [&R](1:5,((2:25,3:99):60,(4:102,(5:10,6:160):10):60):5);
+	tree untitled = [&R](1:5,((2:25,3:99):60,(4:102,(5:10,6:160):10):60):5);
+	tree untitled = [&R](1:5,((2:25,3:99):60,(4:102,(5:10,6:160):10):60):5);
 End;
 `
 
 func TestNexus(t *testing.T) {
 	want := treeTest{
-		name: "tree1",
+		name: "untitled",
 		in:   "(Eoraptor_lunensis:5, ((Ceratosaurus_nasicornis:25 'Carnotaurus sastrei':99):60,(Tyrannosaurus_rex:102,(Archaeopteryx_lithographica:10 Passer_domesticus:160):10):60):5);",
 		nodes: []node{
 			{id: 0, parent: -1, age: 235_000_000, children: []int{1, 2}},
@@ -79,8 +80,10 @@ func TestNexus(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	names := coll.Names()
-	if len(names) != 1 {
+	if len(names) != 2 {
 		t.Fatalf("nexus: read %d trees, want %d", len(names), 1)
 	}
-	testTree(t, coll.Tree("tree1"), want)
+	testTree(t, coll.Tree("untitled"), want)
+	want.name = "untitled.1"
+	testTree(t, coll.Tree("untitled.1"), want)
 }

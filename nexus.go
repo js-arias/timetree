@@ -80,6 +80,11 @@ func Nexus(r io.Reader, age int64) (*Collection, error) {
 				return nil, fmt.Errorf("incomplete block 'trees': %v", err)
 			}
 			translateTree(tr, labels)
+			if c.Tree(tr.name) != nil {
+				i := len(c.Names())
+				tr.name = fmt.Sprintf("%s.%d", tr.name, i)
+			}
+
 			if err := c.Add(tr); err != nil {
 				return nil, fmt.Errorf("when adding tree %q: %v", tr.Name(), err)
 			}
