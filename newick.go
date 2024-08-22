@@ -177,7 +177,11 @@ func (t *Tree) readNewick(r *bufio.Reader, parent *node, last *string) (*node, e
 	if err != nil {
 		return nil, fmt.Errorf("%w: last read terminal: %s", err, *last)
 	}
-	n.brLen = int64(bl * millionYears)
+
+	// ignore root branch length
+	if n.parent != nil {
+		n.brLen = int64(bl * millionYears)
+	}
 
 	return n, nil
 }
@@ -244,7 +248,7 @@ func readBrLen(r *bufio.Reader) (float64, error) {
 		if unicode.IsSpace(r1) || r1 == ',' {
 			break
 		}
-		if r1 == '(' || r1 == ')' {
+		if r1 == '(' || r1 == ')' || r1 == ';' {
 			r.UnreadRune()
 			break
 		}

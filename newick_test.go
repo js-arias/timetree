@@ -136,7 +136,7 @@ func TestNewick(t *testing.T) {
 		},
 		"beast tree with comments": {
 			name: "beast tree with comments",
-			in:   "((A[&1_x=2.5,2_x=2.1,4_rng{2.3,2.1}]:1.0,B[&1_x=2.5,2_x=2.1,4_rng{2.3,2.1}]:1.0)[&1_x=2.5,2_x=2.1,4_rng{2.3,2.1}]:2.4,C[&1_x=2.5,2_x=2.1,4_rng{2.3,2.1}]:3.4)[&1_x=2.5,2_x=2.1,4_rng{2.3,2.1}];",
+			in:   "((A[&1_x=2.5,2_x=2.1,4_rng{2.3,2.1}]:1.0,B[&1_x=2.5,2_x=2.1,4_rng{2.3,2.1}]:1.0)[&1_x=2.5,2_x=2.1,4_rng{2.3,2.1}]:2.4,C[&1_x=2.5,2_x=2.1,4_rng{2.3,2.1}]:3.4)[&1_x=2.5,2_x=2.1,4_rng{2.3,2.1}]:0.0;",
 			nodes: []node{
 				{id: 0, parent: -1, age: 3_400_000, children: []int{1, 2}},
 				{id: 1, parent: 0, taxon: "C", toRoot: 3_400_000, depth: 1},
