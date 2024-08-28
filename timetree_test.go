@@ -304,6 +304,10 @@ func TestMRCA(t *testing.T) {
 			terms: []string{"Passer domesticus"},
 			mrca:  10,
 		},
+		"un-canonized names": {
+			terms: []string{"Passer domesticus", "Archaeopteryx Lithographica", "ceratosaurus nasicornis"},
+			mrca:  2,
+		},
 	}
 	c, err := timetree.ReadTSV(strings.NewReader(dinoTree))
 	if err != nil {
@@ -607,16 +611,19 @@ func TestDelete(t *testing.T) {
 func TestSubTree(t *testing.T) {
 	c, err := timetree.ReadTSV(strings.NewReader(dinoTree))
 	if err != nil {
-		t.Fatalf("Delete: unexpected error: %v", err)
+		t.Fatalf("SubTree: unexpected error: %v", err)
 	}
 
 	d := c.Tree("dinos")
 	if d == nil {
-		t.Fatalf("Delete: tree %q not found", "dinos")
+		t.Fatalf("SubTree: tree %q not found", "dinos")
 	}
 
 	mrca := d.MRCA("Tyrannosaurus rex", "Passer domesticus")
 	nt := d.SubTree(mrca, "TETANUROS")
+	if nt == nil {
+		t.Fatalf("SubTree: nil subTree, MRCA: %v", mrca)
+	}
 
 	w := treeTest{
 		name: "tetanuros",

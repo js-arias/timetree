@@ -340,7 +340,7 @@ func (t *Tree) MRCA(names ...string) int {
 		return -1
 	}
 
-	n, ok := t.taxa[names[0]]
+	n, ok := t.taxa[canon(names[0])]
 	if !ok {
 		return -1
 	}
@@ -354,6 +354,7 @@ func (t *Tree) MRCA(names ...string) int {
 	}
 
 	for _, nm := range names[1:] {
+		nm = canon(nm)
 		n, ok := t.taxa[nm]
 		if !ok {
 			return -1
