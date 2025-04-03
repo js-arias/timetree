@@ -14,13 +14,16 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/js-arias/command"
 	"github.com/js-arias/timetree"
 )
 
 var Command = &command.Command{
-	Usage: `set [--tozero]  [-i|--input <file>]
+	Usage: `set [--tozero] [--fossils <time>]
+	[-i|--input <file>]
 	[-o|--output <file>] <treefile>...`,
 	Short: "set ages of the nodes of a tree",
 	Long: `
@@ -44,6 +47,14 @@ As an usual operation is to set ages of all terminals to 0 (present), the flag
 --tozero is provided to automatize this action. Note that the flag will set
 all terminals in the tree collection.
 
+To set the age using a set of fossils use the option --fossils with the
+minimum branch length added for the ghost lineages at each speciation event.
+With this option, the interpretation of the input file will be different.
+The file will be a TSV file with header and the following columns:
+
+	- species  the name of the fossil species
+	- age      the age of the species in million years
+
 The resulting tree file will be printed in the standard output. Use the flag
 --output, or -o, to define an output file.
 	`,
@@ -52,11 +63,13 @@ The resulting tree file will be printed in the standard output. Use the flag
 }
 
 var toZero bool
+var fossils float64
 var input string
 var output string
 
 func setFlags(c *command.Command) {
 	c.Flags().BoolVar(&toZero, "tozero", false, "")
+	c.Flags().Float64Var(&fossils, "fossils", 0, "")
 	c.Flags().StringVar(&input, "input", "", "")
 	c.Flags().StringVar(&input, "i", "", "")
 	c.Flags().StringVar(&output, "output", "", "")
@@ -85,6 +98,14 @@ func run(c *command.Command, args []string) error {
 
 	if toZero {
 		termsToZero(coll)
+	} else if fossils > 0 {
+		ages, err := readFossilAges(c.Stdin())
+		if err != nil {
+			return err
+		}
+		if err := setFossilAges(coll, ages); err != nil {
+			return err
+		}
 	} else if err := readAges(c.Stdin(), coll); err != nil {
 		return err
 	}
@@ -174,6 +195,108 @@ func readAges(r io.Reader, c *timetree.Collection) error {
 	return nil
 }
 
+func setFossilAges(coll *timetree.Collection, ages map[string]int64) error {
+	branch := int64(fossils * millionYears)
+	for tx, age := range ages {
+		for _, name := range coll.Names() {
+			t := coll.Tree(name)
+			id, ok := t.TaxNode(tx)
+			if !ok {
+				continue
+			}
+
+			var nodes []int
+			for a := id; a >= 0; a = t.Parent(a) {
+				if t.Age(a) >= age+branch*int64(len(nodes)) {
+					break
+				}
+				nodes = append([]int{a}, nodes...)
+			}
+
+			for i, n := range nodes {
+				a := age + int64(len(nodes[i:])-1)*branch
+				if err := t.Set(n, a); err != nil {
+					return fmt.Errorf("node %d: age %.6f: %v", n, float64(a)/millionYears, err)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func readFossilAges(r io.Reader) (map[string]int64, error) {
+	if input != "" {
+		f, err := os.Open(input)
+		if err != nil {
+			return nil, err
+		}
+		defer f.Close()
+		r = f
+	} else {
+		input = "stdin"
+	}
+
+	tab := csv.NewReader(r)
+	tab.Comma = '\t'
+	tab.Comment = '#'
+
+	head, err := tab.Read()
+	if err != nil {
+		return nil, fmt.Errorf("%q: when reading header: %v", input, err)
+	}
+	fields := make(map[string]int)
+	for i, h := range head {
+		h = strings.ToLower(h)
+		fields[h] = i
+	}
+	cols := []string{
+		"species",
+		"age",
+	}
+	for _, h := range cols {
+		if _, ok := fields[h]; !ok {
+			return nil, fmt.Errorf("%q: header: expecting field %q", input, h)
+		}
+	}
+
+	tax := make(map[string]int64)
+	for {
+		row, err := tab.Read()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		ln, _ := tab.FieldPos(0)
+		if err != nil {
+			return nil, fmt.Errorf("%q: line %d: %v", input, ln, err)
+		}
+
+		f := "species"
+		name := canon(row[fields[f]])
+		if name == "" {
+			continue
+		}
+
+		f = "age"
+		age, err := strconv.ParseFloat(row[fields[f]], 64)
+		if err != nil {
+			return nil, fmt.Errorf("%q: line %d: field %q: %v", input, ln, f, err)
+		}
+		if age < 0 {
+			return nil, fmt.Errorf("%q: line %d: field %q: ages must be greater than 1", input, ln, f)
+		}
+
+		years := int64(age * millionYears)
+		if a, ok := tax[name]; ok {
+			if a < years {
+				tax[name] = years
+			}
+			continue
+		}
+		tax[name] = years
+	}
+	return tax, nil
+}
+
 func termsToZero(c *timetree.Collection) {
 	for _, tn := range c.Names() {
 		t := c.Tree(tn)
@@ -205,4 +328,16 @@ func writeTrees(w io.Writer, c *timetree.Collection) (err error) {
 		return fmt.Errorf("while writing to %q: %v", outName, err)
 	}
 	return nil
+}
+
+// Canon returns a taxon name
+// in its canonical form.
+func canon(name string) string {
+	name = strings.Join(strings.Fields(name), " ")
+	if name == "" {
+		return ""
+	}
+	name = strings.ToLower(name)
+	r, n := utf8.DecodeRuneInString(name)
+	return string(unicode.ToUpper(r)) + name[n:]
 }
