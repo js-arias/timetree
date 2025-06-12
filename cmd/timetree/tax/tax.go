@@ -17,7 +17,7 @@ import (
 )
 
 var Command = &command.Command{
-	Usage: `tax [--taxonomy <file>] [--set]
+	Usage: `tax [--taxonomy <file>] [--set] [--del]
 	[-o|--output <file>] <treefile>...`,
 	Short: "validate terminal names of a tree",
 	Long: `
@@ -42,7 +42,8 @@ To be valid, a taxon must have "accepted" status, and with a valid rank
 
 By default, matches with synonym names will be reported to the standard error.
 Use the flag --set to change the name of the terminal to the accepted name
-from the taxonomy.
+from the taxonomy. Use the flag --del to remove any terminal absent from the
+taxonomy.
 	
 The resulting tree file will be printed on the standard output. Use the
 --output, or -o flag, to define an output file.
@@ -52,11 +53,13 @@ The resulting tree file will be printed on the standard output. Use the
 }
 
 var setFlag bool
+var delFlag bool
 var taxFile string
 var output string
 
 func setFlags(c *command.Command) {
 	c.Flags().BoolVar(&setFlag, "set", false, "")
+	c.Flags().BoolVar(&delFlag, "del", false, "")
 	c.Flags().StringVar(&taxFile, "taxonomy", "", "")
 	c.Flags().StringVar(&output, "output", "", "")
 	c.Flags().StringVar(&output, "o", "", "")
@@ -94,7 +97,7 @@ func run(c *command.Command, args []string) error {
 		}
 	}
 
-	if setFlag {
+	if setFlag || delFlag {
 		if err := writeTrees(c.Stdout(), coll); err != nil {
 			return err
 		}
@@ -226,6 +229,16 @@ func validateTree(w io.Writer, t *timetree.Tree, tx *taxonomy.Taxonomy) error {
 	}
 
 	if len(absent) > 0 {
+		if delFlag {
+			fmt.Fprintf(w, "%s: Not in taxonomy (removed):\n", t.Name())
+			for n := range absent {
+				id, _ := t.TaxNode(n)
+				fmt.Fprintf(w, "\t%s [%d]\n", n, id)
+				t.Delete(id)
+			}
+			return nil
+		}
+
 		fmt.Fprintf(w, "%s: Not in taxonomy:\n", t.Name())
 		for n := range absent {
 			id, _ := t.TaxNode(n)
