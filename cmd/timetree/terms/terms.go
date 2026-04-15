@@ -17,7 +17,9 @@ import (
 )
 
 var Command = &command.Command{
-	Usage: "terms [--tree <tree-name>] [<tree-file>...]",
+	Usage: `terms [--fossils] [--current]
+	[--tree <tree-name>]
+	[<tree-file>...]`,
 	Short: "print a list of tree terminals from a file",
 	Long: `
 Command terms reads a tree file in TSV format and print the list of the
@@ -27,19 +29,28 @@ One or more tree files in TSV format can be given as arguments. If no file is
 given, the trees will be read from the standard input.
 
 By default all terminals will be printed. If the flag --tree is set, only the
-terminals of the indicated tree will be printed.
+terminals of the indicated tree will be printed. If the flag --fossils is
+defined, it will only list fossil terminals (i.e, non-zero age). If the flag
+--current is set, it will only list current terminals (i.e., with zero age).
 	`,
 	SetFlags: setFlags,
 	Run:      run,
 }
 
+var fossils bool
+var current bool
 var treeName string
 
 func setFlags(c *command.Command) {
+	c.Flags().BoolVar(&fossils, "fossils", false, "")
+	c.Flags().BoolVar(&current, "current", false, "")
 	c.Flags().StringVar(&treeName, "tree", "", "")
 }
 
 func run(c *command.Command, args []string) error {
+	if fossils && current {
+		return c.UsageError("flags --fossils and --current cannot be used simultaneously")
+	}
 	coll := timetree.NewCollection()
 
 	if len(args) == 0 {
@@ -99,6 +110,20 @@ func makeList(c *timetree.Collection) []string {
 	for _, tn := range c.Names() {
 		t := c.Tree(tn)
 		for _, tax := range t.Terms() {
+			id, ok := t.TaxNode(tax)
+			if !ok {
+				continue
+			}
+			if fossils {
+				if t.Age(id) == 0 {
+					continue
+				}
+			}
+			if current {
+				if t.Age(id) != 0 {
+					continue
+				}
+			}
 			terms[tax] = true
 		}
 	}
