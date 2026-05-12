@@ -655,3 +655,127 @@ func TestSubTree(t *testing.T) {
 	w.name = "dinos:node-6"
 	testTree(t, nt, w)
 }
+
+var dinoTreeToEd = `# some dinosaurs
+tree	node	parent	age	taxon
+dinos	0	-1	235000000	
+dinos	1	0	230000000	Eoraptor lunensis
+dinos	2	0	230000000	
+dinos	5	2	71000000	Carnotaurus sastrei
+dinos	3	2	170000000	
+dinos	4	3	145000000	Ceratosaurus nasicornis
+dinos	7	3	68000000	Tyrannosaurus rex
+dinos	8	0	160000000	
+dinos	9	8	150000000	Archaeopteryx lithographica
+dinos	10	8	0	Passer domesticus
+`
+
+func TestGraft(t *testing.T) {
+	c, err := timetree.ReadTSV(strings.NewReader(dinoTreeToEd))
+	if err != nil {
+		t.Fatalf("Graft: unexpected error: %v", err)
+	}
+
+	d := c.Tree("dinos")
+	if d == nil {
+		t.Fatalf("Graft: tree %q not found", "dinos")
+	}
+	if err := d.Graft(2, 9, 170000000); err != nil {
+		t.Errorf("Graft: %v\n", err)
+	}
+	d.Format()
+	if err := d.Graft(6, 3, 170000000); err != nil {
+		t.Errorf("Graft: %v\n", err)
+	}
+	d.Format()
+
+	w, err := timetree.ReadTSV(strings.NewReader(dinoTree))
+	if err != nil {
+		t.Fatalf("Graft: unexpected error: %v", err)
+	}
+	testTreeEqual(t, "Graft", d, w.Tree("dinos"))
+}
+
+func testTreeEqual(t testing.TB, name string, got, want *timetree.Tree) {
+	t.Helper()
+
+	if err := got.Validate(); err != nil {
+		t.Fatalf("%s: unexpected error: %v", name, err)
+	}
+	if err := want.Validate(); err != nil {
+		t.Fatalf("%s: unexpected error: %v", name, err)
+	}
+
+	if got.Name() != want.Name() {
+		t.Errorf("%s: tree name: got %q, want %q", name, got.Name(), want.Name())
+	}
+	if got.Root() != want.Root() {
+		t.Errorf("%s: tree root ID %d, want %d", name, got.Root(), want.Root())
+	}
+
+	nodes := got.Nodes()
+	if len(nodes) != len(want.Nodes()) {
+		t.Fatalf("%s: got %d nodes %v, want %d nodes %v", name, len(nodes), nodes, len(want.Nodes()), want.Nodes())
+	}
+
+	for _, id := range nodes {
+		n := getNode(got, id)
+		w := getNode(want, id)
+		if !reflect.DeepEqual(n, w) {
+			t.Errorf("%s: node %d: got %v, want %v", name, id, n, w)
+		}
+
+		r := got.IsRoot(id)
+		if n.parent == -1 && !r {
+			t.Errorf("%s: is root (node %d) false", name, id)
+		}
+		if n.parent >= 0 && r {
+			t.Errorf("%s: is root (node %d) true", name, id)
+		}
+
+		it := got.IsTerm(id)
+		if it && len(n.children) > 0 {
+			t.Errorf("%s: is term (node %d) true", name, id)
+		}
+		if !it && len(n.children) == 0 {
+			t.Errorf("%s: is term (node %d) false", name, id)
+		}
+
+		if w.taxon == "" {
+			continue
+		}
+		term, ok := got.TaxNode(w.taxon)
+		if !ok {
+			t.Errorf("%s: taxon %q: not found", name, w.taxon)
+			continue
+		}
+		if term != id {
+			t.Errorf("%s: taxon %q: got ID %d, want %d\n", name, w.taxon, term, id)
+		}
+	}
+
+	wt := want.Taxa()
+	if len(wt) > 0 {
+		taxa := got.Taxa()
+		if !reflect.DeepEqual(taxa, wt) {
+			t.Errorf("%s: got %v taxa, want %v", name, taxa, wt)
+		}
+	}
+
+	wt = want.Terms()
+	if len(wt) > 0 {
+		terms := got.Terms()
+		if !reflect.DeepEqual(terms, wt) {
+			t.Errorf("%s: got %v terminals, want %v", name, terms, wt)
+		}
+	}
+
+	if got.Len() != want.Len() {
+		t.Errorf("%s: total length: got %d, want %d", name, got.Len(), want.Len())
+	}
+
+	internal := len(got.Terms()) - 1
+	if got.NumInternal() != internal {
+		t.Errorf("%s: internal nodes: got %d, want %d", name, got.NumInternal(), internal)
+	}
+}

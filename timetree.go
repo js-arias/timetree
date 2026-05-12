@@ -294,6 +294,132 @@ func (t *Tree) Format() {
 	t.nodes = nodes
 }
 
+// Graft moves a node from its current position
+// to be a sister of the indicated node.
+// A new node will be added with the indicated age.
+func (t *Tree) Graft(id, sis int, age int64) error {
+	n, ok := t.nodes[id]
+	if !ok {
+		return nil
+	}
+
+	s, ok := t.nodes[sis]
+	if !ok {
+		return fmt.Errorf("graft: sister %d not in tree", sis)
+	}
+
+	if age < n.age {
+		return fmt.Errorf("graft: invalid age: %d, should be greater than %d", age, n.age)
+	}
+	if age < s.age {
+		return fmt.Errorf("graft: invalid age: %d, should be greater than %d", age, s.age)
+	}
+
+	// the destination points can not be a descendant of the node
+	if t.IsAnc(id, sis) {
+		return fmt.Errorf("graft: sister %d is a descendant of %d", sis, id)
+	}
+
+	p := n.parent
+
+	// polytomous node
+	if len(p.children) > 2 {
+		// remove the node
+		for i, c := range p.children {
+			if c == n {
+				p.children[i] = nil
+				p.children = append(p.children[:i], p.children[i+1:]...)
+				break
+			}
+		}
+		n.parent = nil
+	} else {
+		// in a dichotomous node, remove the parent node
+
+		// if the node is the root
+		// we must assign a new root
+		if p == t.root {
+			xs := n
+			for _, c := range p.children {
+				if c != n {
+					xs = c
+					break
+				}
+			}
+			xs.parent = nil
+			n.parent = nil
+			t.root.children = nil
+			t.root = xs
+		} else {
+			xs := n
+			for _, c := range p.children {
+				if c != n {
+					xs = c
+					break
+				}
+			}
+			xs.parent = p.parent
+			for i, c := range xs.parent.children {
+				if c == p {
+					xs.parent.children[i] = xs
+				}
+			}
+			n.parent = nil
+		}
+		if p.taxon != "" {
+			delete(t.taxa, p.taxon)
+		}
+		p.children = nil
+		delete(t.nodes, p.id)
+	}
+
+	p = s.parent
+
+	// if the age is older we move down until get a correct age
+	for p != nil {
+		if p.age > age {
+			break
+		}
+		s = p
+		p = s.parent
+	}
+
+	// the parent is the root node
+	if p == nil {
+		p = &node{
+			id:       len(t.nodes),
+			age:      age,
+			children: []*node{n, s},
+		}
+		s.parent = p
+		s.brLen = p.age - s.age
+		n.parent = p
+		n.brLen = p.age - n.age
+		t.nodes[p.id] = p
+		t.root = p
+		return nil
+	}
+
+	xp := &node{
+		id:       len(t.nodes),
+		parent:   p,
+		age:      age,
+		brLen:    p.age - age,
+		children: []*node{n, s},
+	}
+	s.parent = xp
+	s.brLen = xp.age - s.age
+	n.parent = xp
+	n.brLen = xp.age - n.age
+	t.nodes[xp.id] = xp
+	for i, c := range p.children {
+		if c == s {
+			p.children[i] = xp
+		}
+	}
+	return nil
+}
+
 // IsRoot returns true if the indicated node
 // is the root of the tree.
 func (t *Tree) IsRoot(id int) bool {
@@ -302,6 +428,28 @@ func (t *Tree) IsRoot(id int) bool {
 		return false
 	}
 	return n.parent == nil
+}
+
+// IsAnc returns true if the indicated node
+// is an ancestor of the target node.
+func (t *Tree) IsAnc(id, target int) bool {
+	n, ok := t.nodes[target]
+	if !ok {
+		return false
+	}
+
+	// a node cannot be a parent of itself
+	if id == target {
+		return false
+	}
+	for n.parent != nil {
+		p := n.parent
+		if p.id == id {
+			return true
+		}
+		n = n.parent
+	}
+	return false
 }
 
 // IsTerm returns true if the indicated node
@@ -380,19 +528,6 @@ func (t *Tree) MRCA(names ...string) int {
 	return mrca[len(mrca)-1]
 }
 
-// NumInternal returns the number of internal nodes
-// (i.e., nodes with descendants).
-func (t *Tree) NumInternal() int {
-	num := 0
-	for _, n := range t.nodes {
-		if len(n.children) == 0 {
-			continue
-		}
-		num++
-	}
-	return num
-}
-
 // Move sets the age of the root node (in years),
 // and updates all node ages keeping the branch lengths.
 // The age of the root must be at least equal to the distance
@@ -405,6 +540,19 @@ func (t *Tree) Move(age int64) error {
 	t.root.age = age
 	t.root.propagateAge()
 	return nil
+}
+
+// NumInternal returns the number of internal nodes
+// (i.e., nodes with descendants).
+func (t *Tree) NumInternal() int {
+	num := 0
+	for _, n := range t.nodes {
+		if len(n.children) == 0 {
+			continue
+		}
+		num++
+	}
+	return num
 }
 
 // Name returns the name of the tree.
